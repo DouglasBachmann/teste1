@@ -64,11 +64,16 @@ ENHANCED_CSS = """
   inset: 0;
   background: rgba(0,0,0,.72);
   z-index: 10000;
-  display: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  opacity: 0;
+  pointer-events: none;
   backdrop-filter: blur(4px);
-  animation: loft-fade-in .15s ease;
+  transition: opacity .15s ease;
 }
-#loft-cp-backdrop.loft-open { display: flex; align-items: flex-start; justify-content: center; padding-top: 80px; }
+#loft-cp-backdrop.loft-open { opacity: 1; pointer-events: all; }
 #loft-cp-modal {
   width: min(640px, 92vw);
   background: #141414;
@@ -351,6 +356,8 @@ ENHANCED_CSS = """
 #loft-kb-close:hover { background: #1e1e1e; color: #888; }
 
 /* ── Ripple Effect ─────────────────────────────────────────────── */
+/* Ripple setup: ensure relative+overflow on button targets */
+.sbb, .topt { overflow: hidden; }
 .loft-ripple-host { position: relative; overflow: hidden; }
 .loft-ripple-wave {
   position: absolute;
@@ -856,6 +863,29 @@ ENHANCED_JS = """
     }
   }
 
+  // ═══════════════════════════════════════════
+  // FEATURE 8 — Autosave Hook (via #toast-live)
+  // ═══════════════════════════════════════════
+  function hookAutosave() {
+    setTimeout(function() {
+      var nativeLive = document.getElementById('toast-live');
+      if (!nativeLive) return;
+      var obs = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+          m.addedNodes.forEach(function(node) {
+            if (node.nodeType === 1) {
+              var txt = node.textContent || '';
+              if (txt.indexOf('Salvo') !== -1 || txt.indexOf('salvo') !== -1) {
+                loftToast('✓ Caso salvo automaticamente', 'success', 2500);
+              }
+            }
+          });
+        });
+      });
+      obs.observe(nativeLive, { childList: true });
+    }, 1400);
+  }
+
   function init() {
     waitForApp(function() {
       buildToastSystem();
@@ -866,6 +896,7 @@ ENHANCED_JS = """
       buildFocusMode();
       buildRipple();
       setupKeyboard();
+      hookAutosave();
       // Welcome toast
       setTimeout(function() {
         loftToast('⌘K command palette • ? atalhos • Shift+F foco', 'info', 5000);
