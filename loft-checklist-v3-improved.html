@@ -2286,97 +2286,64 @@ details[style*="border-top"] summary { font-size: .73em !important; }
 .qbar .qb[onclick*="toggleSemNec"]:hover{border-color:#4ADE80;background:rgba(74,222,128,.1);}
 /* ─────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   LOFT CHECKLIST V3 — CAMADA DE MELHORIAS
-   Improvements: UX, Acessibilidade, Visual, Animações, Responsividade
-   ═══════════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOFT CHECKLIST V3 — MELHORIAS (Visual · Acessibilidade · UX · Responsivo)
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Skip navigation (acessibilidade teclado) ── */
-.skip-nav{
-  position:absolute;top:-100px;left:16px;
-  padding:8px 18px;background:var(--brand);color:#fff;
-  font-weight:700;font-size:.88em;text-decoration:none;
-  border-radius:0 0 8px 8px;z-index:9999;
-  transition:top .15s;
-}
+/* ── Skip navigation ── */
+.skip-nav{position:absolute;top:-100px;left:16px;padding:8px 18px;
+  background:var(--brand);color:#fff;font-weight:700;font-size:.88em;
+  text-decoration:none;border-radius:0 0 8px 8px;z-index:9999;transition:top .15s;}
 .skip-nav:focus{top:0;}
 
 /* ── Scroll-to-top button ── */
 #scroll-top-btn{
-  position:fixed;bottom:24px;left:24px;
-  width:34px;height:34px;
+  position:fixed;bottom:24px;left:24px;width:34px;height:34px;
   background:#151515;border:1px solid #252525;border-radius:50%;
   color:#555;font-size:14px;cursor:pointer;z-index:7900;
   display:flex;align-items:center;justify-content:center;
   opacity:0;transform:translateY(8px) scale(.9);
   transition:opacity .2s,transform .2s,background .15s,border-color .15s,color .15s;
   pointer-events:none;font-family:inherit;line-height:1;
-  box-shadow:0 2px 10px rgba(0,0,0,.4);
-}
+  box-shadow:0 2px 10px rgba(0,0,0,.4);}
 #scroll-top-btn.stt-vis{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
 #scroll-top-btn:hover{background:#1e1e1e;border-color:var(--brand);color:var(--brand);}
 #scroll-top-btn:active{transform:scale(.92);}
 
-/* ── Header backdrop blur + border ── */
-header{
-  backdrop-filter:blur(14px) saturate(1.2)!important;
+/* ── Header backdrop blur ── */
+header{backdrop-filter:blur(14px) saturate(1.2)!important;
   -webkit-backdrop-filter:blur(14px) saturate(1.2)!important;
   border-bottom:1px solid rgba(255,255,255,.05)!important;
-  background:rgba(26,26,26,.9)!important;
-}
+  background:rgba(26,26,26,.9)!important;}
 
-/* ── Global progress bar shimmer ── */
-#global-progress-fill{
-  background:linear-gradient(90deg,var(--brand) 0%,#ff5555 50%,var(--brand) 100%)!important;
-  background-size:200% 100%!important;
-  transition:width .35s ease!important;
-}
-#global-progress-fill[style*="100%"]{animation:none!important;}
-@keyframes loft-progress-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
-
-/* ── Progress bar gradient fills ── */
+/* ── Progress bar shimmer ── */
 .hgf{background:linear-gradient(90deg,var(--brand),#ff5555)!important;}
 .prf{background:linear-gradient(90deg,var(--brand),#ff5555)!important;}
 
-/* ── Section title separator gradient ── */
-.fst::after,.csh::after{
-  background:linear-gradient(to right,var(--br),transparent)!important;
-  flex:1!important;height:1px!important;
-}
+/* ── Section separator gradient ── */
+.fst::after,.csh::after{background:linear-gradient(to right,var(--br),transparent)!important;}
 
 /* ── Sidebar label accent ── */
-.sbl{
-  display:flex;align-items:center;gap:8px;
-}
-.sbl::before{
-  content:'';display:inline-block;
-  width:2px;height:10px;
-  background:var(--brand);border-radius:1px;opacity:.5;
-  flex-shrink:0;
-}
+.sbl{display:flex;align-items:center;gap:8px;}
+.sbl::before{content:'';display:inline-block;width:2px;height:10px;
+  background:var(--brand);border-radius:1px;opacity:.5;flex-shrink:0;}
 
 /* ── Sidebar active item ── */
 .ci{transition:background .12s,color .12s,border-color .12s!important;}
-.ci.on{
-  background:rgba(250,7,7,.07)!important;
-  border-left-color:var(--brand)!important;
-  color:var(--brand)!important;
-}
+.ci.on{background:rgba(250,7,7,.07)!important;border-left-color:var(--brand)!important;color:var(--brand)!important;}
 .ci:hover{background:rgba(255,255,255,.04)!important;}
 
-/* ── Card hover effects ── */
+/* ── Card hover lift ── */
 .vc{transition:transform .15s,border-color .15s!important;}
 .vc:hover{transform:translateY(-1px);}
 .sd-card{transition:transform .15s,border-color .2s,box-shadow .15s!important;}
 .sd-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)!important;}
-.eng-card{transition:border-color .15s!important;}
 
-/* ── Form sections hover ── */
+/* ── Form section hover ── */
 .fs,.cbox,.linha-card{transition:border-color .15s!important;}
 .fs:hover,.cbox:hover{border-color:#222!important;}
-.linha-card:hover{border-color:#2a2a2a!important;}
 
-/* ── Motivational messages styling ── */
+/* ── Motivational messages ── */
 .mot{border-radius:6px!important;}
 .mot.warn{border-left:3px solid #555!important;}
 .mot.good,.mot.great{border-left:3px solid #4ADE80!important;}
@@ -2385,33 +2352,20 @@ header{
 .prw{transition:box-shadow .15s!important;}
 .prw:hover{box-shadow:0 2px 14px rgba(0,0,0,.45)!important;}
 
-/* ── Button active/press states ── */
-.sbn:not(:disabled):active,
-.relm-btn:active,.lt-btn:active,.ab-btn:active,
-.qb:active,.ec-btn:active{
-  transform:scale(.96);transition-duration:.06s;
-}
+/* ── Button press state ── */
+.sbn:not(:disabled):active,.relm-btn:active,.lt-btn:active,
+.ab-btn:active,.qb:active,.ec-btn:active{transform:scale(.96);transition-duration:.06s;}
 
-/* ── Toggle option improvements ── */
-.topt{
-  border:1px solid #1e1e1e;transition:border-color .12s,color .12s,background .12s!important;
-}
-.topt:hover:not(.t-sim):not(.t-comp):not(.t-lim){
-  border-color:#2e2e2e;color:#ccc!important;
-}
+/* ── Toggle options ── */
+.topt{border:1px solid #1e1e1e;transition:border-color .12s,color .12s,background .12s!important;}
+.topt:hover:not(.t-sim):not(.t-comp):not(.t-lim){border-color:#2e2e2e;color:#ccc!important;}
 
-/* ── Verification button improvements ── */
+/* ── Verification buttons ── */
 .vb{transition:border-color .12s,color .12s,background .12s!important;}
 
 /* ── Checklist option hover ── */
-.fchk-mot-opt{
-  transition:background .1s,border-color .1s,color .1s!important;
-}
-.fchk-mot-opt:hover{
-  background:#141414!important;
-  border-color:rgba(250,7,7,.25)!important;
-  color:#E8E8E8!important;
-}
+.fchk-mot-opt{transition:background .1s,border-color .1s,color .1s!important;}
+.fchk-mot-opt:hover{background:#141414!important;border-color:rgba(250,7,7,.25)!important;color:#E8E8E8!important;}
 
 /* ── Reason options ── */
 .ro{transition:border-color .12s,background .12s!important;}
@@ -2422,22 +2376,12 @@ header{
 #lori-fab:hover{transform:scale(1.08)!important;box-shadow:0 4px 22px rgba(250,7,7,.4)!important;}
 #lori-fab:active{transform:scale(.93)!important;}
 
-/* ── Toast improvements ── */
-.toast{
-  background:#1e1e1e!important;
-  border:1px solid #2a2a2a!important;
-  border-left:3px solid var(--brand)!important;
-  color:#E8E8E8!important;
-  font-size:14px!important;
-  font-weight:600!important;
-  border-radius:8px!important;
+/* ── Toast improvement ── */
+.toast{background:#1e1e1e!important;border:1px solid #2a2a2a!important;
+  border-left:3px solid var(--brand)!important;color:#E8E8E8!important;
+  font-size:14px!important;font-weight:600!important;border-radius:8px!important;
   box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(250,7,7,.08)!important;
-  backdrop-filter:blur(8px)!important;
-  padding:10px 18px!important;
-}
-
-/* ── Summary dashboard ── */
-.summary-dash{gap:10px!important;}
+  backdrop-filter:blur(8px)!important;padding:10px 18px!important;}
 
 /* ── Line template buttons ── */
 .lt-btn{transition:opacity .12s,transform .1s!important;}
@@ -2445,184 +2389,90 @@ header{
 
 /* ── Page animation ── */
 .main.anim{animation:loft-page-enter .22s ease!important;}
-@keyframes loft-page-enter{
-  from{opacity:0;transform:translateY(5px)}
-  to{opacity:1;transform:translateY(0)}
-}
+@keyframes loft-page-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── Engine panel card ── */
-.eng-card:hover{border-color:#333!important;}
-
-/* ── Preflight items ── */
-.pf-err,.pf-warn,.pf-ok{
-  padding:5px 2px!important;
-  border-radius:4px!important;
-  transition:background .1s;
-}
-
-/* ── Problem item hover (Revisão) ── */
-.problem-item[onclick]:hover{
-  background:rgba(250,7,7,.04)!important;
-  border-radius:5px!important;
-  cursor:pointer!important;
-}
+/* ── Problem item hover ── */
+.problem-item[onclick]:hover{background:rgba(250,7,7,.04)!important;border-radius:5px!important;cursor:pointer!important;}
 
 /* ── Sidebar scrollbar ── */
 .sidebar::-webkit-scrollbar{width:2px!important;}
 .sidebar::-webkit-scrollbar-thumb{background:#1e1e1e!important;border-radius:2px!important;}
 .sidebar::-webkit-scrollbar-thumb:hover{background:#2e2e2e!important;}
-.hl::-webkit-scrollbar{width:2px!important;}
-.hl::-webkit-scrollbar-thumb{background:#1e1e1e!important;}
 
-/* ── Quick-action bar rounded corners ── */
-.qbar{border-radius:6px!important;}
-
-/* ── Category badge animations ── */
+/* ── Category badge ── */
 .ci-b{transition:background .12s,color .12s!important;min-width:28px;text-align:center!important;}
 
-/* ── Heading level consistency ── */
-.phd h1{letter-spacing:-.025em!important;}
-
-/* ── Focus-visible improvements for interactive divs ── */
+/* ── Focus-visible ── */
 .ci:focus-visible,.topt:focus-visible,.vb:focus-visible,
 .ro:focus-visible,.fchk-b:focus-visible,.fchk-mot-opt:focus-visible,
-.qb:focus-visible,.lt-btn:focus-visible,.ec-btn:focus-visible{
-  outline:2px solid var(--brand)!important;outline-offset:2px!important;
-  border-radius:4px!important;
-}
+.qb:focus-visible,.lt-btn:focus-visible{outline:2px solid var(--brand)!important;outline-offset:2px!important;border-radius:4px!important;}
 
-/* ── Unsaved dot styling ── */
-#unsaved-dot{
-  transition:opacity .3s!important;
-}
-
-/* ── LORI panel scrollbar ── */
-.lori-msgs::-webkit-scrollbar{width:2px!important;}
-.lori-msgs::-webkit-scrollbar-thumb{background:#1a1a1a!important;}
-
-/* ── Print styles ── */
-@media print{
-  header,.sidebar,#lori-fab,#lori-panel,
-  #scroll-top-btn,#engine-panel,#global-progress-bar{display:none!important;}
-  .main{padding:0!important;overflow:visible!important;}
-  body{background:#fff!important;color:#000!important;}
-}
-
-/* ── High contrast accessibility support ── */
-@media(forced-colors:active){
-  .vb,.topt,.fchk-b,.ci,.qb{border:2px solid ButtonText!important;}
-  .ci.on,.vb.ok.on,.vb.fl.on{border-color:Highlight!important;}
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   LOFT V3 — IMPROVEMENTS LAYER 2 (análise profunda)
-   Origem: análise de 68 pontos por agente especializado
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* ── Skeleton loading animation ── */
+/* ── Skeleton loading ── */
 @keyframes loft-skeleton{0%,100%{background-color:#1a1a1a}50%{background-color:#252525}}
-.skeleton{
-  animation:loft-skeleton 1.4s ease infinite;
-  background:#1a1a1a;border-radius:4px;
-  display:inline-block;
-}
+.skeleton{animation:loft-skeleton 1.4s ease infinite;background:#1a1a1a;border-radius:4px;display:inline-block;}
 .skeleton-line{height:.85em;border-radius:3px;margin-bottom:.4em;}
 .skeleton-block{height:48px;border-radius:6px;margin-bottom:8px;}
 
-/* ── Utility: danger ghost button (replaces 828 inline styles) ── */
-.btn-danger-ghost{
-  font-size:.72em;padding:3px 10px;
-  border:1px solid rgba(250,7,7,.25);border-radius:5px;
-  background:rgba(250,7,7,.07);color:#f87171;
-  cursor:pointer;font-family:inherit;font-weight:700;
-  transition:background .15s;
-}
+/* ── Utility: danger ghost button ── */
+.btn-danger-ghost{font-size:.72em;padding:3px 10px;border:1px solid rgba(250,7,7,.25);
+  border-radius:5px;background:rgba(250,7,7,.07);color:#f87171;cursor:pointer;
+  font-family:inherit;font-weight:700;transition:background .15s;}
 .btn-danger-ghost:hover{background:rgba(250,7,7,.15);}
 
-/* ── Textarea max-height guard ── */
+/* ── Textarea max-height ── */
 textarea{max-height:320px!important;overflow-y:auto!important;}
 .ff textarea{max-height:280px!important;}
 
-/* ── Additional responsive breakpoints ── */
-
-/* Tablet landscape (1024-1200px): reduce padding, stack cols */
+/* ── Responsive: tablet (≤1200px) ── */
 @media(max-width:1200px){
   .main{padding:26px 28px;}
   .fg3{grid-template-columns:1fr 1fr!important;}
 }
 
-/* Small phones (<480px): compact everything */
+/* ── Responsive: small phone (≤480px) ── */
 @media(max-width:480px){
   .main{padding:12px 12px 80px!important;}
   .fs,.cbox{padding:16px 14px!important;}
-  .sidebar{width:100%!important;}
   .idc{padding:14px 16px!important;}
-  .modal-box{width:100vw!important;border-radius:14px 14px 0 0!important;position:fixed!important;bottom:0!important;margin:0!important;}
-  .modal-overlay{align-items:flex-end!important;padding:0!important;}
   .phd h1{font-size:18px!important;}
   .sb{padding:18px 16px!important;}
-  .sbn{font-size:14px!important;padding:9px 14px!important;}
-  .lori-panel{width:calc(100vw - 16px)!important;}
+  .modal-box{width:100vw!important;border-radius:14px 14px 0 0!important;
+    position:fixed!important;bottom:0!important;margin:0!important;}
+  .modal-overlay{align-items:flex-end!important;padding:0!important;}
 }
 
-/* Large desktop (>1440px): constrain max width */
+/* ── Responsive: large desktop (≥1440px) ── */
 @media(min-width:1440px){
   .main{max-width:1200px;}
   .fg{grid-template-columns:1fr 1fr 1fr!important;}
 }
 
-/* ── Keyboard shortcuts modal ── */
-.kbd-key{
-  display:inline-block;padding:1px 6px;
-  border:1px solid #333;border-radius:4px;
-  background:#1a1a1a;font-family:var(--ff-mono);
-  font-size:.78em;color:#ccc;font-weight:700;
-  box-shadow:0 1px 0 #111;
-}
-.kbd-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a1a1a;font-size:.83em;color:#E8E8E8;}
+/* ── Keyboard shortcut key badge ── */
+.kbd-key{display:inline-block;padding:1px 6px;border:1px solid #333;border-radius:4px;
+  background:#1a1a1a;font-family:var(--ff-mono);font-size:.78em;color:#ccc;font-weight:700;
+  box-shadow:0 1px 0 #111;}
+.kbd-row{display:flex;align-items:center;gap:8px;padding:5px 0;
+  border-bottom:1px solid #1a1a1a;font-size:.83em;color:#E8E8E8;}
 .kbd-row:last-child{border-bottom:none;}
 .kbd-desc{color:#888;font-size:.9em;}
-#kbd-help-btn{
-  font-size:.7em;padding:3px 8px;
-  border:1px solid #222;border-radius:4px;
-  background:none;color:#555;cursor:pointer;
-  font-family:inherit;transition:color .12s,border-color .12s;
-}
+#kbd-help-btn{font-size:.7em;padding:3px 8px;border:1px solid #222;border-radius:4px;
+  background:none;color:#555;cursor:pointer;font-family:inherit;
+  transition:color .12s,border-color .12s;}
 #kbd-help-btn:hover{color:#aaa;border-color:#444;}
 
-/* ── Modal aria improvements ── */
-.modal-title{font-size:1em;font-weight:700;}
-
-/* ── Table headers ── */
-.lori-val-table th{text-align:left;}
-
-/* ── Color-blind friendly status indicators ── */
-.vc-result .sr-only,
-.b-ok .sr-only,.b-fl .sr-only,.b-pe .sr-only{
-  position:absolute;width:1px;height:1px;padding:0;
-  margin:-1px;overflow:hidden;clip:rect(0,0,0,0);
-  white-space:nowrap;border:0;
+/* ── Print styles ── */
+@media print{
+  header,.sidebar,#lori-fab,#lori-panel,#scroll-top-btn,
+  #engine-panel,#global-progress-bar{display:none!important;}
+  .main{padding:0!important;overflow:visible!important;}
+  body{background:#fff!important;color:#000!important;}
 }
 
-/* ── Autosave dot visible style ── */
-#unsaved-dot{
-  position:fixed;bottom:6px;left:50%;transform:translateX(-50%);
-  width:6px;height:6px;border-radius:50%;
-  background:var(--brand);opacity:0;
-  transition:opacity .3s;z-index:9990;pointer-events:none;
+/* ── High contrast mode ── */
+@media(forced-colors:active){
+  .vb,.topt,.fchk-b,.ci,.qb{border:2px solid ButtonText!important;}
+  .ci.on,.vb.ok.on,.vb.fl.on{border-color:Highlight!important;}
 }
-#unsaved-dot.dot-vis{opacity:.6;}
-
-/* ── Quick copy bar ── */
-#quick-copy-bar{
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
-  background:#111;border:1px solid #222;border-radius:8px 8px 0 0;
-  padding:8px 16px;z-index:9000;font-size:.8em;
-  transition:transform .2s;
-  display:flex;align-items:center;gap:8px;
-  pointer-events:none;
-}
-#quick-copy-bar.qcb-vis{transform:translateX(-50%) translateY(0);pointer-events:auto;}
 </style>
 
 </head>
@@ -2647,9 +2497,9 @@ textarea{max-height:320px!important;overflow-y:auto!important;}
  <button class="theme-btn" id="sidebar-toggle" title="Menu (atalhos: Alt+R=Revisão, Alt+I=IA, Alt+C=Calc, Alt+L=Lori)" onclick="document.querySelector('.sidebar').classList.toggle('sidebar-open')" title="Menu" style="display:none">☰</button>
  <button class="theme-btn" id="supBtn" onclick="toggleModoSupervisor()" title="Modo revisão rápida">👁 Supervisor</button>
  <button onclick="limparForm()" title="Limpar todos os dados deste caso" style="font-size:.72em;padding:3px 10px;border:1px solid rgba(250,7,7,.25);border-radius:5px;background:rgba(250,7,7,.07);color:#f87171;cursor:pointer;font-family:inherit;font-weight:700;transition:all .15s" onmouseenter="this.style.background='rgba(250,7,7,.15)'" onmouseleave="this.style.background='rgba(250,7,7,.07)'">🗑 Limpar tudo</button>
- <button onclick="toggleDebugMode()" title="Modo debug" aria-label="Modo debug" style="font-size:.72em;padding:3px 9px;border:1px solid #222;border-radius:5px;background:none;color:#555;cursor:pointer;font-family:inherit">🪲</button>
-      <button onclick="showErrorLog()" title="Log de erros" aria-label="Ver log de erros" style="font-size:.72em;padding:3px 9px;border:1px solid #222;border-radius:5px;background:none;color:#555;cursor:pointer;font-family:inherit">📋 Erros</button>
-      <button class="theme-btn" onclick="exportarCaso()" title="Exportar caso" aria-label="Exportar caso como JSON">📤</button>
+ <button onclick="toggleDebugMode()" title="Modo debug" style="font-size:.72em;padding:3px 9px;border:1px solid #222;border-radius:5px;background:none;color:#555;cursor:pointer;font-family:inherit">🪲</button>
+      <button onclick="showErrorLog()" title="Log de erros" style="font-size:.72em;padding:3px 9px;border:1px solid #222;border-radius:5px;background:none;color:#555;cursor:pointer;font-family:inherit">📋 Erros</button>
+      <button class="theme-btn" onclick="exportarCaso()" title="Exportar caso" aria-label="Exportar caso">📤</button>
  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Alternar tema">☀ Claro</button>
 </header>
 <div class="wrap">
@@ -13758,168 +13608,7 @@ function gerarRelatorioHTML(){
     +'<div><div class="t">Saldo</div><div class="v2 sal">'+toR(saldo)+'</div></div>'
     +'</div>'
     +calcHtml
-    +'
-<!-- ══ LOFT V3 IMPROVEMENTS ══════════════════════════════════════════════ -->
-<button id="scroll-top-btn"
-  title="Voltar ao topo"
-  aria-label="Voltar ao início da página"
-  onclick="(function(){var m=document.querySelector('.main');if(m)m.scrollTo({top:0,behavior:'smooth'});})();this.blur()">↑</button>
-
-<script>
-/* LOFT V3 — Improvements Script */
-(function(){
-  'use strict';
-
-  /* ─ Scroll-to-top button ─ */
-  var _sttBtn = document.getElementById('scroll-top-btn');
-  var _mainEl = document.querySelector('.main') || document.getElementById('mc');
-  if (_sttBtn && _mainEl) {
-    _mainEl.addEventListener('scroll', function() {
-      if (_mainEl.scrollTop > 280) {
-        _sttBtn.classList.add('stt-vis');
-      } else {
-        _sttBtn.classList.remove('stt-vis');
-      }
-    }, { passive: true });
-  }
-
-  /* ─ Keyboard support for interactive divs ─ */
-  document.addEventListener('keydown', function(e) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    var t = e.target;
-    if (!t.hasAttribute('onclick')) return;
-    var tag = t.tagName.toUpperCase();
-    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'A') return;
-    if (t.matches('.topt,.vb,.ci,.ro,.fchk-b,.fchk-mot-opt,.qb,.lt-btn')) {
-      e.preventDefault();
-      t.click();
-    }
-  });
-
-  /* ─ Add tabindex + role to interactive divs (applied once + on DOM changes) ─ */
-  var _a11ySelector = '.topt,.vb,.ci,.ro,.fchk-b,.fchk-mot-opt,.qb,.lt-btn,.ec-btn-apply';
-  function _applyA11y() {
-    var els = document.querySelectorAll(_a11ySelector);
-    for (var i = 0; i < els.length; i++) {
-      var el = els[i];
-      if (!el.hasAttribute('tabindex') && el.hasAttribute('onclick')) {
-        el.setAttribute('tabindex', '0');
-        if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
-      }
-    }
-  }
-  _applyA11y();
-  var _a11yObs = new MutationObserver(function(muts) {
-    var any = false;
-    for (var i = 0; i < muts.length; i++) {
-      if (muts[i].addedNodes.length) { any = true; break; }
-    }
-    if (any) requestAnimationFrame(_applyA11y);
-  });
-  _a11yObs.observe(document.body, { childList: true, subtree: true });
-
-  /* ─ Announce page section changes to screen readers ─ */
-  var _srAnnounce = document.createElement('div');
-  _srAnnounce.setAttribute('aria-live', 'polite');
-  _srAnnounce.setAttribute('aria-atomic', 'true');
-  _srAnnounce.className = 'sr-only';
-  _srAnnounce.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
-  document.body.appendChild(_srAnnounce);
-
-  /* ─ Remove anim class after animation ends ─ */
-  var _mcEl = document.getElementById('mc');
-  if (_mcEl) {
-    _mcEl.addEventListener('animationend', function() {
-      _mcEl.classList.remove('anim');
-    });
-  }
-
-})();
-</script>
-
-
-<script>
-/* LOFT V3 — Improvements Layer 2 */
-(function(){
-  'use strict';
-
-  /* ─ Keyboard shortcuts help button ─ */
-  var _header = document.querySelector('header');
-  if (_header) {
-    var _kbdBtn = document.createElement('button');
-    _kbdBtn.id = 'kbd-help-btn';
-    _kbdBtn.title = 'Atalhos de teclado';
-    _kbdBtn.setAttribute('aria-label', 'Ver atalhos de teclado');
-    _kbdBtn.textContent = '⌨';
-    _kbdBtn.onclick = function() {
-      if (typeof showModal === 'function') {
-        showModal({
-          ico: '⌨',
-          title: 'Atalhos de Teclado',
-          body: [
-            '<div style="font-size:.88em">',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">1</span><span class="kbd-desc">→ Adicionar linha Aluguel (Calc)</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">2</span><span class="kbd-desc">→ Adicionar linha Condomínio</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">3</span><span class="kbd-desc">→ Adicionar linha Danos</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">R</span><span class="kbd-desc">→ Ir para Revisão</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">I</span><span class="kbd-desc">→ Ir para Validar IA</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">C</span><span class="kbd-desc">→ Ir para Calculadora</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">L</span><span class="kbd-desc">→ Abrir/fechar LORI</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">Z</span><span class="kbd-desc">→ Desfazer última ação</span></div>',
-            '<div class="kbd-row"><span class="kbd-key">Esc</span><span class="kbd-desc">→ Fechar modal / painel</span></div>',
-            '</div>'
-          ].join(''),
-          confirmTxt: 'Fechar',
-          cancelTxt: 'Fechar'
-        });
-      }
-    };
-    _header.appendChild(_kbdBtn);
-  }
-
-  /* ─ Add aria-labelledby to modals (patch showModal) ─ */
-  if (typeof showModal === 'function') {
-    var _origShowModal = showModal;
-    window.showModal = function(opts) {
-      _origShowModal(opts);
-      // After creation, add aria-labelledby
-      requestAnimationFrame(function() {
-        var dlg = document.querySelector('.modal-box[role="document"]');
-        if (dlg) {
-          var title = dlg.querySelector('.modal-title');
-          if (title && !title.id) {
-            title.id = 'modal-title-' + Date.now();
-            var overlay = dlg.closest('[role="dialog"]');
-            if (overlay) overlay.setAttribute('aria-labelledby', title.id);
-          }
-        }
-      });
-    };
-  }
-
-  /* ─ Table header scope attributes ─ */
-  document.querySelectorAll('table th').forEach(function(th) {
-    if (!th.hasAttribute('scope')) {
-      th.setAttribute('scope', 'col');
-    }
-  });
-
-  /* ─ Debounce helper exposed for inline handlers (future use) ─ */
-  if (!window._loftDebounce) {
-    window._loftDebounce = function(fn, ms) {
-      var t;
-      return function() {
-        var args = arguments;
-        clearTimeout(t);
-        t = setTimeout(function() { fn.apply(null, args); }, ms);
-      };
-    };
-  }
-
-})();
-</script>
-
-</body></html>';
+    +'</body></html>';
 
   // ── Download ─────────────────────────────────────────────────────
   var blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -21031,6 +20720,100 @@ document.addEventListener('DOMContentLoaded', function() {
 // ═══════════════════════════════════════════════════════════════════════
 
 </script>
+<!-- ═══════════════════════════════════════════════════════
+     LOFT V3 — IMPROVEMENTS
+     ═══════════════════════════════════════════════════════ -->
+<button id="scroll-top-btn"
+  title="Voltar ao topo"
+  aria-label="Voltar ao início da página"
+  onclick="(function(){var m=document.querySelector('.main');if(m)m.scrollTo({top:0,behavior:'smooth'});})();this.blur()">↑</button>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ─ Scroll-to-top ─ */
+  var sttBtn = document.getElementById('scroll-top-btn');
+  var mainEl = document.querySelector('.main') || document.getElementById('mc');
+  if (sttBtn && mainEl) {
+    mainEl.addEventListener('scroll', function() {
+      sttBtn.classList[mainEl.scrollTop > 280 ? 'add' : 'remove']('stt-vis');
+    }, { passive: true });
+  }
+
+  /* ─ Keyboard support: Enter/Space on interactive divs ─ */
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var t = e.target;
+    if (!t.hasAttribute('onclick')) return;
+    var tag = t.tagName.toUpperCase();
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'A') return;
+    if (t.matches('.topt,.vb,.ci,.ro,.fchk-b,.fchk-mot-opt,.qb,.lt-btn')) {
+      e.preventDefault(); t.click();
+    }
+  });
+
+  /* ─ tabindex + role on interactive divs (static + dynamic) ─ */
+  var _sel = '.topt,.vb,.ci,.ro,.fchk-b,.fchk-mot-opt,.qb,.lt-btn,.ec-btn-apply';
+  function applyA11y() {
+    var els = document.querySelectorAll(_sel);
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!el.hasAttribute('tabindex') && el.hasAttribute('onclick')) {
+        el.setAttribute('tabindex', '0');
+        if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
+      }
+    }
+  }
+  applyA11y();
+  new MutationObserver(function(m) {
+    for (var i = 0; i < m.length; i++) { if (m[i].addedNodes.length) { requestAnimationFrame(applyA11y); break; } }
+  }).observe(document.body, { childList: true, subtree: true });
+
+  /* ─ Keyboard shortcuts help button ─ */
+  var hdr = document.querySelector('header');
+  if (hdr) {
+    var kb = document.createElement('button');
+    kb.id = 'kbd-help-btn';
+    kb.title = 'Atalhos de teclado';
+    kb.setAttribute('aria-label', 'Ver atalhos de teclado');
+    kb.textContent = '⌨';
+    kb.onclick = function() {
+      if (typeof showModal !== 'function') return;
+      showModal({
+        ico: '⌨',
+        title: 'Atalhos de Teclado',
+        body: '<div style="font-size:.88em">'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">1</span><span class="kbd-desc"> Aluguel (Calc)</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">2</span><span class="kbd-desc"> Condomínio</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">3</span><span class="kbd-desc"> Danos</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">R</span><span class="kbd-desc"> Revisão</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">I</span><span class="kbd-desc"> Validar IA</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">C</span><span class="kbd-desc"> Calculadora</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">L</span><span class="kbd-desc"> LORI</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Alt</span>+<span class="kbd-key">Z</span><span class="kbd-desc"> Desfazer</span></div>'
+          + '<div class="kbd-row"><span class="kbd-key">Esc</span><span class="kbd-desc"> Fechar painel/modal</span></div>'
+          + '</div>',
+        confirmTxt: 'Fechar', cancelTxt: 'Fechar'
+      });
+    };
+    hdr.appendChild(kb);
+  }
+
+  /* ─ animationend cleanup ─ */
+  var mc = document.getElementById('mc');
+  if (mc) mc.addEventListener('animationend', function() { mc.classList.remove('anim'); });
+
+  /* ─ Debounce helper ─ */
+  if (!window._loftDebounce) {
+    window._loftDebounce = function(fn, ms) {
+      var t; return function() { var a = arguments; clearTimeout(t); t = setTimeout(function(){ fn.apply(null,a); }, ms); };
+    };
+  }
+
+})();
+</script>
+
 </body></html>
 
 
