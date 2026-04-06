@@ -22584,8 +22584,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })();
 
-    // UX-IA-LAYOUT: Reorder IA tab — document accordions appear first (top),
-    //   API Key + KB editor + batch action buttons go to bottom.
+    // UX-IA-LAYOUT: Reorder IA tab — document accordions appear FIRST (top),
+    //   everything else (API Key, KB editor, batch buttons) goes to bottom.
     //   Approach: wrap rValidarIA so we run AFTER every render.
     (function() {
       function _reorderIATab() {
@@ -22597,98 +22597,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (kids.length < 3) return;
 
         // Classify each direct child into three buckets:
-        //   "top"     = progress-bar, contract badge, page header (.phd)
-        //   "middle"  = document accordions (contain ia-drop- zones)
-        //   "bottom"  = API Key .ia-section, KB .ia-section, batch buttons,
-        //               running-progress indicator, unified-report section
-        var topEls = [], middleEls = [], bottomEls = [];
+        //   "top"    = #ia-progress-bar  |  .phd header
+        //   "mid"    = document accordions: id starts with "ia-acc-"
+        //   "bottom" = everything else (API Key, KB, batch buttons, etc.)
+        var topEls = [], midEls = [], botEls = [];
 
         kids.forEach(function(el) {
           if (!el) return;
-
-          // TOP: progress bar or page header
-          if (el.id === 'ia-progress-bar' ||
-              (el.classList && el.classList.contains('ia-progress-overview')) ||
-              (el.classList && el.classList.contains('phd'))) {
-            topEls.push(el);
-            return;
-          }
-
-          // TOP: contract-type badge (small conditional div, no ia-section class)
-          var html = el.innerHTML || '';
-          if (!el.classList.contains('ia-section') &&
-              el.tagName === 'DIV' &&
-              html.indexOf('ia-drop-') === -1 &&
-              html.indexOf('iaRunAll') === -1 &&
-              html.indexOf('iaCruzarDocumentos') === -1 &&
-              html.indexOf('ia-api-key') === -1 &&
-              html.indexOf('ia-kb-') === -1 &&
-              html.indexOf('ia-key-input') === -1 &&
-              el.querySelectorAll('textarea').length === 0 &&
-              el.querySelectorAll('input[type="password"]').length === 0 &&
-              el.querySelectorAll('.ia-doc-accordion').length === 0 &&
-              el.querySelectorAll('[id^="ia-drop-"]').length === 0 &&
-              el.querySelectorAll('[id^="ia-acc-"]').length === 0) {
-            topEls.push(el);
-            return;
-          }
-
-          // BOTTOM: API Key section (has password input or ia-api-key id)
-          if (el.querySelectorAll('input[type="password"]').length > 0 ||
-              el.querySelector('#ia-api-key') ||
-              html.indexOf('ia-api-key') !== -1 ||
-              html.indexOf('ia-key-input') !== -1) {
-            bottomEls.push(el);
-            return;
-          }
-
-          // BOTTOM: KB editor section (has textarea)
-          if (el.querySelectorAll('textarea').length > 0 ||
-              html.indexOf('ia-kb-') !== -1) {
-            bottomEls.push(el);
-            return;
-          }
-
-          // BOTTOM: batch action buttons (iaRunAll / iaCruzarDocumentos / iaRelatorio)
-          var btns = el.querySelectorAll ? el.querySelectorAll('[onclick]') : [];
-          var hasBatch = false;
-          for (var i = 0; i < btns.length; i++) {
-            var oc = btns[i].getAttribute('onclick') || '';
-            if (oc.indexOf('iaRunAll') !== -1 ||
-                oc.indexOf('iaCruzarDocumentos') !== -1 ||
-                oc.indexOf('iaRelatorio') !== -1) {
-              hasBatch = true;
-              break;
-            }
-          }
-          if (hasBatch && !el.classList.contains('ia-section')) {
-            bottomEls.push(el);
-            return;
-          }
-
-          // MIDDLE: document accordion sections (contain drop zones or accordion ids)
-          if (el.querySelectorAll('[id^="ia-drop-"]').length > 0 ||
-              el.querySelectorAll('[id^="ia-acc-"]').length > 0 ||
-              el.querySelectorAll('.ia-doc-accordion').length > 0 ||
-              html.indexOf('ia-drop-') !== -1) {
-            middleEls.push(el);
-            return;
-          }
-
-          // Default: treat as bottom (running-progress, unified-report, etc.)
-          bottomEls.push(el);
+          // TOP: progress bar
+          if (el.id === 'ia-progress-bar') { topEls.push(el); return; }
+          // TOP: page header
+          if (el.classList && el.classList.contains('phd')) { topEls.push(el); return; }
+          // MID: individual document accordions (id="ia-acc-contrato", etc.)
+          if (el.id && el.id.indexOf('ia-acc-') === 0) { midEls.push(el); return; }
+          // BOTTOM: everything else (API Key, KB, batch buttons, running-progress, reports)
+          botEls.push(el);
         });
 
-        // Require at least some document accordions in middle to proceed
-        if (middleEls.length === 0) return;
+        // Only reorder if there are document accordions to show at top
+        if (midEls.length === 0) return;
 
-        // Re-insert in order: top → middle → bottom
+        // Re-insert: top → accordions → bottom controls
         var frag = document.createDocumentFragment();
         topEls.forEach(function(el) { frag.appendChild(el); });
-        middleEls.forEach(function(el) { frag.appendChild(el); });
-        bottomEls.forEach(function(el) { frag.appendChild(el); });
+        midEls.forEach(function(el) { frag.appendChild(el); });
+        botEls.forEach(function(el) { frag.appendChild(el); });
 
-        // Clear panel and reinsert
         while (panel.firstChild) panel.removeChild(panel.firstChild);
         panel.appendChild(frag);
       }
