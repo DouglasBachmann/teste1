@@ -1081,6 +1081,8 @@ header{background:#1a1a1a;border-bottom:1px solid #141414;}
 .ia-progress{margin-top:12px;font-size:14px;color:#888;text-align:center;}
 .ia-progress .ia-spinner{display:inline-block;width:14px;height:14px;border:2px solid #333;border-top-color:var(--brand);border-radius:50%;animation:ia-spin .6s linear infinite;margin-right:6px;vertical-align:middle;}
 @keyframes ia-spin{to{transform:rotate(360deg);}}
+@keyframes ia-pulse { 0%,100%{border-color:#333} 50%{border-color:#fa0707} }
+.ia-loading-pulse { animation: ia-pulse 1.5s ease-in-out infinite !important; }
 .ia-result{margin-top:20px;background:#181818;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;}
 .ia-result-hd{padding:14px 18px;border-bottom:1px solid #1a1a1a;font-size:15px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center;}
 .ia-result-body{padding:18px;font-size:15px;line-height:1.7;color:#ccc;white-space:pre-wrap;word-break:break-word;max-height:70vh;overflow-y:auto;}
@@ -5658,7 +5660,7 @@ async function gerarEmailCompletoIA() {
   if (!apiKey || !apiKey.trim().startsWith('AIza')) { toast('Configure a API key Gemini'); return; }
 
   var btn = document.getElementById('btn-email-completo');
-  if (btn) { btn.textContent = '⏳ Gerando...'; btn.disabled = true; }
+  if (btn) { btn.textContent = '⏳ Gerando...'; btn.disabled = true; btn.classList.add('ia-loading-pulse'); }
 
   try {
     var form = D.form || {};
@@ -5723,7 +5725,7 @@ async function gerarEmailCompletoIA() {
   } catch(ex) {
     toast('Erro ao gerar e-mail: ' + ex.message, true);
   } finally {
-    if (btn) { btn.textContent = '📧 Gerar e-mail completo'; btn.disabled = false; }
+    if (btn) { btn.textContent = '📧 Gerar e-mail completo'; btn.disabled = false; btn.classList.remove('ia-loading-pulse'); }
   }
 }
 
@@ -9749,7 +9751,7 @@ async function _ctbAnalisar() {
   if (!hasFiles) { toast('Adicione ao menos uma imagem ou o contrato PDF'); return; }
   _ctbLoading = true;
   var btn = document.getElementById('ctb-btn-analisar');
-  if (btn) { btn.disabled=true; btn.textContent='Analisando…'; }
+  if (btn) { btn.disabled=true; btn.textContent='Analisando…'; btn.classList.add('ia-loading-pulse'); }
   try {
     var parts = [{text: 'Extraia os seguintes campos do contrato/sistema de locação:\n' +
       'imobiliaria, cpf_cnpj_imob, proprietario, inquilino, cpf_inq, endereco, aluguel, ' +
@@ -9820,7 +9822,7 @@ async function _ctbAnalisar() {
     toast('Erro na análise: '+err.message);
   }
   _ctbLoading = false;
-  if (btn) { btn.disabled=false; btn.textContent='🔍 Analisar contrato'; }
+  if (btn) { btn.disabled=false; btn.textContent='🔍 Analisar contrato'; btn.classList.remove('ia-loading-pulse'); }
 }
 
 function _ctbValidar() {
@@ -17582,10 +17584,22 @@ async function iaDetectTipoDoc(key,file){
 }
 
 if(typeof window!=='undefined')window.iaFileParts=iaFileParts;
+// ── _estimateTokens ───────────────────────────────────────────────────────────
+function _estimateTokens(text){
+  return Math.ceil((text||'').length/3.5);
+}
+
 // ── iaCall ────────────────────────────────────────────────────────────────────
 async function iaCall(model,systemPrompt,parts,maxTokens,temperature){
   var apiKey=_getIaKey();
   if(!apiKey||!apiKey.trim().startsWith('AIza'))throw new Error('API key não configurada');
+
+  // Token estimation
+  var _estInput=systemPrompt+(JSON.stringify(parts)||'');
+  var _estTok=_estimateTokens(_estInput);
+  console.info('[LOFT IA] Estimated tokens:',_estTok);
+  if(_estTok>30000)toast('⚠ Documento muito grande — extração pode ser incompleta','warn');
+
   var url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+apiKey;
   var temp=typeof temperature==='number'?temperature:0.1;
   var body={
@@ -17595,6 +17609,7 @@ async function iaCall(model,systemPrompt,parts,maxTokens,temperature){
   if(systemPrompt)body.systemInstruction={parts:[{text:systemPrompt}]};
   var MAX_RETRIES=3;
   var timeoutMs=Math.max(60000,Math.min(180000,(maxTokens||24000)*4));
+  var _lastHttpStatus=0;
   for(var attempt=0;attempt<MAX_RETRIES;attempt++){
     var ctrl=new AbortController();var aborted=false;
     var tid=setTimeout(function(){aborted=true;ctrl.abort();},timeoutMs);
@@ -17602,11 +17617,27 @@ async function iaCall(model,systemPrompt,parts,maxTokens,temperature){
       console.log('[iaCall] '+model+' attempt '+(attempt+1)+'/'+MAX_RETRIES+' parts='+parts.length+' timeout='+Math.round(timeoutMs/1000)+'s');
       var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
       clearTimeout(tid);
-      if(resp.status===429||resp.status===503){
+      _lastHttpStatus=resp.status;
+      if(resp.status===429||resp.status===503||resp.status===502){
         var waitMs=Math.min(Math.pow(2,attempt)*3000,20000);
         console.warn('[iaCall] '+resp.status+' — aguardando '+waitMs+'ms');
-        if(attempt<MAX_RETRIES-1){toast('API ocupada — aguardando '+(waitMs/1000)+'s...',false,'warn');await new Promise(function(r){setTimeout(r,waitMs);});continue;}
+        if(attempt<MAX_RETRIES-1){
+          if(resp.status===429)toast('API ocupada — aguardando '+(waitMs/1000)+'s...','warn');
+          else toast('API ocupada — aguardando '+(waitMs/1000)+'s...','warn');
+          await new Promise(function(r){setTimeout(r,waitMs);});continue;
+        }
+        // Last retry — show specific toast
+        if(resp.status===429)toast('⏳ Gemini: limite de requisições atingido — aguarde alguns segundos','warn');
+        else toast('🔌 Gemini: serviço temporariamente indisponível — tentando novamente...','warn');
         throw new Error('API sobrecarregada ('+resp.status+') após '+MAX_RETRIES+' tentativas. Tente novamente em 1 minuto.');
+      }
+      if(resp.status===400){
+        if(attempt===MAX_RETRIES-1)toast('❌ Gemini: requisição inválida — verifique o documento enviado','warn');
+        var errTxt400=await resp.text();throw new Error('Gemini '+model+' 400: '+errTxt400.substring(0,200));
+      }
+      if(resp.status===401||resp.status===403){
+        toast('🔑 Gemini: API key inválida ou sem permissão','warn');
+        var errTxt401=await resp.text();throw new Error('Gemini '+model+' '+resp.status+': '+errTxt401.substring(0,200));
       }
       if(!resp.ok){var errTxt=await resp.text();throw new Error('Gemini '+model+' '+resp.status+': '+errTxt.substring(0,200));}
       var data=await resp.json();
@@ -17619,14 +17650,26 @@ async function iaCall(model,systemPrompt,parts,maxTokens,temperature){
       var text=candidate.content.parts.map(function(p){return p.text||'';}).join('\n');
       if(!text||text.trim().length<5)throw new Error('Modelo retornou texto vazio');
       console.log('[iaCall] OK — '+text.length+' chars, finish: '+(candidate.finishReason||'STOP'));
-      if((candidate.finishReason||'STOP')==='MAX_TOKENS'){text=text+'[TRUNCADO]';toast('Resposta truncada — validação pode estar incompleta',false,'warn');}
+      if((candidate.finishReason||'STOP')==='MAX_TOKENS'){
+        text=text+'[TRUNCADO]';
+        toast('Resposta truncada — validação pode estar incompleta',false,'warn');
+      }
+      // Warn on truncated marker in result
+      if(text.indexOf('[TRUNCADO]')!==-1){
+        toast('⚠ Resposta da IA truncada — resultado pode ser incompleto','warn');
+      }
       return text;
     }catch(e){
       clearTimeout(tid);
       console.warn('[iaCall] Erro attempt '+(attempt+1)+':',e.message);
       if(e.name==='AbortError'||aborted){
         if(attempt<MAX_RETRIES-1){toast('Timeout — retentando...',false,'warn');continue;}
+        toast('⏱ Gemini: tempo limite excedido — tente com um arquivo menor','warn');
         throw new Error('Timeout após '+MAX_RETRIES+' tentativas ('+Math.round(timeoutMs/1000)+'s). Documento muito pesado.');
+      }
+      // Detect network errors (fetch itself failed, no HTTP status)
+      if(_lastHttpStatus===0&&attempt===MAX_RETRIES-1&&e.name!=='AbortError'){
+        toast('📡 Sem conexão com Gemini — verifique sua internet','warn');
       }
       if(attempt===MAX_RETRIES-1)throw e;
       await new Promise(function(r){setTimeout(r,1500*(attempt+1));});
@@ -17635,9 +17678,27 @@ async function iaCall(model,systemPrompt,parts,maxTokens,temperature){
   throw new Error('Falha após '+MAX_RETRIES+' tentativas');
 }
 
+// ── iaCall with flash→pro fallback ────────────────────────────────────────────
+var _iaCallInner=iaCall;
+iaCall=async function iaCallWithFallback(model,systemPrompt,parts,maxTokens,temperature){
+  try{
+    return await _iaCallInner(model,systemPrompt,parts,maxTokens,temperature);
+  }catch(e){
+    // Fallback: if flash fails with non-auth error, try pro once
+    if(model==='gemini-2.5-flash'&&!/401|403|API key/.test(e.message)){
+      console.info('[LOFT IA] Fallback: flash → pro');
+      toast('🔄 Tentando com modelo Pro...','warn');
+      return await _iaCallInner('gemini-2.5-pro',systemPrompt,parts,maxTokens,temperature);
+    }
+    throw e;
+  }
+};
+
 // ── iaParseJSON ───────────────────────────────────────────────────────────────
 function iaParseJSON(raw){
   if(!raw||typeof raw!=='string')return{_error:'Resposta vazia'};
+  // Harden: strip BOM, null bytes and leading/trailing whitespace before parsing
+  raw=raw.replace(/^\uFEFF/,'').replace(/\0/g,'').trim();
   var lastErr='';
   var cleaned=raw.replace(/\[TRUNCADO\]/g,'').replace(/```json\s*/gi,'').replace(/```\s*/g,'').replace(/^[^{[]*({)/,'$1').trim();
   try{return JSON.parse(cleaned);}catch(e){lastErr=String(e);}
