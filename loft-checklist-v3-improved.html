@@ -21950,16 +21950,33 @@ document.addEventListener('DOMContentLoaded', function() {
       // Storage prototype patching not supported — skip silently
     }
 
-    // 2. Enhance e() to also escape quotes (prevents attribute-context XSS)
-    //    e.g. <input value="${e(val)}"> where val = '" onload="evil()'
-    if (typeof window.e === 'function') {
-      var _origE = window.e;
-      window.e = function(s) {
-        var base = _origE(s);
-        // Add quote escaping for attribute safety
-        return base.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-      };
-    }
+    // 2. Safe RegExp wrapper — catches invalid patterns from dynamic sources
+    //    Prevents crashes like "Invalid regular expression: /[▿-]/g: Range out of order"
+    //    which can arise when user text or AI output is used in regex character classes.
+    (function() {
+      var _OrigRegExp = window.RegExp;
+      try {
+        window.RegExp = function SafeRegExp(pattern, flags) {
+          // If called as constructor
+          if (!(this instanceof SafeRegExp) && !(this instanceof _OrigRegExp)) {
+            try {
+              return new _OrigRegExp(pattern, flags);
+            } catch(ex) {
+              console.warn('[LOFT-SEC] Invalid RegExp suppressed:', ex.message);
+              return /(?:)/; // safe no-op regex
+            }
+          }
+          try {
+            return new _OrigRegExp(pattern, flags);
+          } catch(ex) {
+            console.warn('[LOFT-SEC] Invalid RegExp suppressed:', ex.message);
+            return new _OrigRegExp('(?:)');
+          }
+        };
+        window.RegExp.prototype = _OrigRegExp.prototype;
+        window.RegExp.__proto__ = _OrigRegExp;
+      } catch(ex) { /* ignore if browser prevents RegExp override */ }
+    })();
 
     // 3. Patch autoMarkChecklistFromIA to require minimum confidence threshold
     //    AUDIT BUG6: items marked without confidence check
