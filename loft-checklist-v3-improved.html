@@ -2890,6 +2890,12 @@ body.loft-focus-mode #loft-focus-indicator { display: block; }
   a { color: #111 !important; text-decoration: none !important; }
 }
 
+/* ── LOFT-IA-TAB: Hide ANALISE DOS DOCUMENTOS progress bar ─────── */
+#ia-progress-bar,
+.ia-progress-overview {
+  display: none !important;
+}
+
 </style>
 </head>
 <body>
@@ -22535,6 +22541,90 @@ document.addEventListener('DOMContentLoaded', function() {
         }});
       }
     })();
+
+    // UX-IA-LAYOUT: Reorder IA tab — move batch action buttons to bottom,
+    //   individual document accordions appear first for easier review workflow.
+    (function() {
+      function _reorderIATab() {
+        var panel = document.querySelector('#mc .ia-panel');
+        if (!panel || panel._loftReordered) return;
+
+        // Collect all direct children
+        var children = Array.prototype.slice.call(panel.children);
+        if (children.length < 4) return; // not fully rendered yet
+
+        var batchElements = [];  // elements containing batch action buttons
+        var contentElements = []; // header + API key + KB + individual accordions
+
+        children.forEach(function(child) {
+          var html = child.innerHTML || '';
+          var hasBatchBtn = (html.indexOf('iaRunAll') !== -1 || html.indexOf('iaCruzarDocumentos') !== -1 || html.indexOf('iaGerarRelatorio') !== -1);
+          // Exclude section headers (phd) and config sections (.ia-section) from batch zone
+          var isConfigSection = child.classList && (child.classList.contains('ia-section') || child.classList.contains('phd'));
+          if (hasBatchBtn && !isConfigSection) {
+            batchElements.push(child);
+          } else {
+            contentElements.push(child);
+          }
+        });
+
+        if (batchElements.length === 0) return;
+
+        // Rebuild panel: config/content first, then batch zone
+        var frag = document.createDocumentFragment();
+
+        // Add non-batch elements first
+        contentElements.forEach(function(el) { frag.appendChild(el); });
+
+        // Add a separator before batch zone
+        var sep = document.createElement('div');
+        sep.style.cssText = 'border-top:1px solid #1a1a1a;margin:16px 0 12px;';
+        frag.appendChild(sep);
+
+        // Add label
+        var label = document.createElement('div');
+        label.style.cssText = 'font-family:Rajdhani,sans-serif;font-size:10px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;';
+        label.textContent = 'Validacao em Conjunto';
+        frag.appendChild(label);
+
+        // Add batch elements (deduplicate: if two elements both have iaRunAll, keep only one)
+        var addedRunAll = false;
+        batchElements.forEach(function(el) {
+          var html = el.innerHTML || '';
+          var hasRunAll = html.indexOf('iaRunAll') !== -1;
+          var hasCruzar = html.indexOf('iaCruzarDocumentos') !== -1;
+          // The new topbar (has all 3) takes priority; skip old-only-runAll
+          if (hasRunAll && !hasCruzar && addedRunAll) return; // skip duplicate old batch
+          if (hasRunAll) addedRunAll = true;
+          frag.appendChild(el);
+        });
+
+        panel.innerHTML = '';
+        panel.appendChild(frag);
+        panel._loftReordered = true;
+      }
+
+      // Watch for IA tab renders (rValidarIA sets innerHTML on #mc)
+      var _iaLayoutObs = new MutationObserver(function(muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var m = muts[i];
+          if (m.type === 'childList') {
+            // Check if IA panel appeared
+            if (document.querySelector('#mc .ia-panel')) {
+              setTimeout(_reorderIATab, 80); // slight delay for full render
+              return;
+            }
+          }
+        }
+      });
+      var _mcEl = document.getElementById('mc');
+      if (_mcEl) {
+        _iaLayoutObs.observe(_mcEl, { childList: true });
+      }
+
+      // Also run immediately if already on IA tab
+      setTimeout(_reorderIATab, 300);
+    })();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -22789,7 +22879,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 2. Safe RegExp wrapper — catches invalid patterns from dynamic sources
-    //    Prevents crashes like "Invalid regular expression: /[▿-]/g: Range out of order"
+    //    Prevents "Invalid regular expression: Range out of order" crashes
     //    which can arise when user text or AI output is used in regex character classes.
     (function() {
       var _OrigRegExp = window.RegExp;
