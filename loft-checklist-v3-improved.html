@@ -2289,6 +2289,19 @@ details[style*="border-top"] summary { font-size: .73em !important; }
 
 
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+<script id="loft-early-errorcatch">
+(function(){
+  var _loftErrors=[];
+  window.addEventListener("error",function(ev){
+    var msg=(ev.message||"")+(ev.filename?" @ "+ev.filename:"")+(ev.lineno?" :"+ev.lineno:"");
+    _loftErrors.push(msg);
+    if(msg.toLowerCase().indexOf("regular expression")>=0||msg.toLowerCase().indexOf("syntax")>=0){
+      console.error("[LOFT-ERR] Caught:",msg);
+    }
+  },true);
+  window._loftGetErrors=function(){ return _loftErrors; };
+})();
+</script>
 <style id="loft-enhancements-css">
 
 /* ═══════════════════════════════════════════════════════════════
@@ -6890,7 +6903,7 @@ function abrirDuvida(text) {
     tags: [],
   };
   // Auto-tag based on content
-  if (/dano|reparo|orçamento/i.test(text)) q.tags.push('danos');
+  if (/dano|reparo|or\u00E7amento/i.test(text)) q.tags.push('danos');
   if (/multa|contrato/i.test(text)) q.tags.push('multa');
   if (/vistoria/i.test(text)) q.tags.push('vistoria');
   _caseQuestions.unshift(q);
@@ -10215,7 +10228,7 @@ function rForm(){
  </div>
  <div class="fs"><div class="fst">Limite de Custo Locatício</div>
  <div class="togg">
- <div class="topt ${lIlim}" onclick="D.limiteCusto=D.limiteCusto==='ilim'?null:'ilim';sv();rForm()"><span class="tdot">${D.limiteCusto==='ilim'?'✓':''}</span>Sem limite de custo locatício</div>
+ <div class="topt ${lIlim}" onclick="D.limiteCusto=D.limiteCusto==='ilim'?null:'ilim';sv();rForm()"><span class="tdot">${D.limiteCusto==='ilim'?'✓':''}</span>Sem limite de custo locat\u00EDcio</div>
  <div class="topt ${lLim}" onclick="D.limiteCusto=D.limiteCusto==='lim'?null:'lim';sv();rForm()"><span class="tdot">${D.limiteCusto==='lim'?'✓':''}</span>Limitado ao valor contratado</div>
  </div>
  ${D.limiteCusto==='lim'?`<div class="lim-block">
@@ -10298,7 +10311,7 @@ function renderAutoSuggest(key){
  let h=`<div style="margin-top:8px;border:1.5px solid rgba(250,7,7,.12);border-radius:8px;background:rgba(250,7,7,.02);overflow:hidden">
  <div onclick="const p=this.nextElementSibling;p.style.display=p.style.display==='none'?'':'none';this.querySelector('.as-arr').textContent=p.style.display===''?'▼':'▶'"
  style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
- <span style="font-size:.78em;font-weight:700;color:var(--brand)"><span class="as-arr">▶</span> ${total} macros relacionadas disponíveis</span>
+ <span style="font-size:.78em;font-weight:700;color:var(--brand)"><span class="as-arr">▶</span> ${total} macros relacionadas dispon\u00EDveis</span>
  </div>
  <div style="display:none;padding:0 12px 10px">`;
  groups.forEach(g=>{
@@ -10543,7 +10556,7 @@ function rCheck(cat){
  </div>
  <div class="sb">
  <div class="sb-ttl">Finalizar seção</div>
- <div class="sb-sub"><span style="color:#4ADE80;font-weight:700">${fc7ok} ✓ OK</span>${fc7nao>0?` · <span style="color:#662222;font-weight:700">${fc7nao} ✕ pendentes</span>`:''} · <span style="opacity:.55">${fc7.length} total</span></div>
+ <div class="sb-sub"><span style="color:#4ADE80;font-weight:700">${fc7ok} ✓ OK</span>${fc7nao>0?` · <span style="color:#662222;font-weight:700">${fc7nao} ✕ pendentes</span>`:''} \u00B7 <span style="opacity:.55">${fc7.length} total</span></div>
  <div class="sb-col">
  ${nxtCat?`<button class="sbn sbn-n" onclick="selCat(${nxtCat.id})">Próxima: ${e(nxtCat.nome)} →</button>`:''}
  <button class="sbn sbn-m" onclick="compartilhar()">Gerar link</button>
@@ -10715,7 +10728,7 @@ ${reasonOpts}</div>`;
  </div>`}
  <div class="sb">
  <div class="sb-ttl">Finalizar seção</div>
- <div class="sb-sub"><span style="color:#4ADE80;font-weight:700">${ok} ✓ validados</span>${fl>0?` · <span style="color:#662222;font-weight:700">${fl} ✕ reprovados</span>`:''} · <span style="opacity:.55">${tot} total</span></div>
+ <div class="sb-sub"><span style="color:#4ADE80;font-weight:700">${ok} ✓ validados</span>${fl>0?` \u00B7 <span style="color:#662222;font-weight:700">${fl} \u2715 reprovados</span>`:''} · <span style="opacity:.55">${tot} total</span></div>
  <div class="sb-col">
  ${nBtn}
  <button class="sbn sbn-m" onclick="gravar(${cat.id})">Gravar no histórico</button>
@@ -11452,7 +11465,7 @@ var LORI_CMDS=[
   },
   {
     id:'pendencia_danos',
-    pat:/(?:adicion[ae]r?|aplicar?)\s+pend[eê]n[ck]ia\s+(?:de\s+)?vistoria\s+(?:em\s+)?(?:todas?\s+)?(?:as\s+)?linhas?\s+(?:de\s+)?danos?/i,
+    pat:/(?:adicion[ae]r?|aplicar?)\s+pend[e\u00EA]n[ck]ia\s+(?:de\s+)?vistoria\s+(?:em\s+)?(?:todas?\s+)?(?:as\s+)?linhas?\s+(?:de\s+)?danos?/i,
     fn:function(m){return{action:'pendencia_vistoria_all_danos'};}
   },
   {
@@ -11888,8 +11901,8 @@ async function calcOCRPaste(file){
           if(!CR) return;
           var tipo='outros';
           var lbl=parsed.descricao||'Documento OCR';
-          if(/aluguel|locacao|locação/i.test(lbl)) tipo='aluguel';
-          else if(/cond[oô]/i.test(lbl)) tipo='condominio';
+          if(/aluguel|locacao|loca\u00E7\u00E3o/i.test(lbl)) tipo='aluguel';
+          else if(/cond[o\u00F4]/i.test(lbl)) tipo='condominio';
           else if(/dano|reparo/i.test(lbl)) tipo='danos';
           var nl={id:'l'+Date.now(),label:lbl,tipo:tipo,status:'aguardando',
             vencLinha:parsed.vencimento||'',macros:[],
@@ -12076,7 +12089,7 @@ function rCalc(c){
   <div style="display:grid;grid-template-columns:2fr 1fr ${showCat?'1fr ':''}1fr auto;gap:8px;align-items:end;width:100%">
     <div class="ifl"><label>Descrição</label><input type="text" value="${e(it.nm)}" placeholder="Ex: Boleto de aluguel" onchange="CR.linhas[${li}].apr[${ai}].nm=this.value;sv()"></div>
     <div class="ifl"><label>Vencimento</label><input type="date" value="${e(it.vc||D.form.vencimento||'')}" onchange="CR.linhas[${li}].apr[${ai}].vc=this.value;sv()"></div>
-    ${showCat?`<div class="ifl"><label>Categoria</label><select onchange="CR.linhas[${li}].apr[${ai}].tipo=this.value;sv();updCalc()"><option value="outro" ${tipo==='outro'?'selected':''}>Outro</option><option value="aluguel" ${tipo==='aluguel'?'selected':''}>Aluguel</option><option value="cond" ${tipo==='cond'?'selected':''}>Condomínio</option><option value="outras" ${tipo==='outras'?'selected':''}>Outras taxas</option><option value="multa" ${tipo==='multa'?'selected':''}>Multa</option><option value="reparos" ${tipo==='reparos'?'selected':''}>Reparos</option></select></div>`:''}
+    ${showCat?`<div class="ifl"><label>Categoria</label><select onchange="CR.linhas[${li}].apr[${ai}].tipo=this.value;sv();updCalc()"><option value="outro" ${tipo==='outro'?'selected':''}>Outro</option><option value="aluguel" ${tipo==='aluguel'?'selected':''}>Aluguel</option><option value="cond" ${tipo==='cond'?'selected':''}>Condom\u00EDnio</option><option value="outras" ${tipo==='outras'?'selected':''}>Outras taxas</option><option value="multa" ${tipo==='multa'?'selected':''}>Multa</option><option value="reparos" ${tipo==='reparos'?'selected':''}>Reparos</option></select></div>`:''}
     <div class="ifl"><label>Valor</label><input type="text" value="${v>0?v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):''}" placeholder="0,00" inputmode="decimal" oninput="var _pv=CR.linhas[${li}].apr[${ai}].v;CR.linhas[${li}].apr[${ai}].v=this.value;if(_pv!==this.value)_recordValHistory(CR.linhas[${li}].id,this.value,_pv);sv();updCalc()"
    onblur="var _raw=this.value.trim();var _clean=_raw.replace(/[R$\s]/g,'');var _hasDot=_clean.lastIndexOf('.')>_clean.lastIndexOf(',');if(_hasDot)_clean=_clean.replace(/,/g,'');else _clean=_clean.replace(/\./g,'').replace(',','.');var _v=parseFloat(_clean);if(!isNaN(_v)&&_v>0){this.value=_v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});CR.linhas[${li}].apr[${ai}].v=this.value;sv();updCalc();}"
    onpaste="setTimeout(function(){var _el=document.querySelector('#linha-${li} .lbody input[placeholder=\'0,00\']');if(_el){var _raw=_el.value.replace(/[R$\s]/g,'');var _v=parseFloat(_raw.replace(/\./g,'').replace(',','.'));if(!isNaN(_v)&&_v>0)_el.value=_v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}},50)"
@@ -12326,7 +12339,7 @@ function rCalc(c){
     <div id="custo-alert-box" style="margin:10px 0 2px">${(()=>{
       const custo=fromR(D.custoSaida||'');const soma=m+men;
       if(!custo&&!soma)return'';
-      if(!custo)return'<div class="custo-alert ca-warn"><span class="custo-alert-ico">\u26a0</span><div class="custo-alert-body"><strong>Custo de Saída não informado</strong></div></div>';
+      if(!custo)return'<div class="custo-alert ca-warn"><span class="custo-alert-ico">\u26a0</span><div class="custo-alert-body"><strong>Custo de Sa\u00EDda n\u00E3o informado</strong></div></div>';
       if(!soma)return'';
       const diff=soma-custo;
       if(diff>0)return'<div class="custo-alert ca-err"><span class="custo-alert-ico">\ud83d\udeab</span><div class="custo-alert-body"><strong>Excede limite</strong> \u2014 '+toR(soma)+' vs '+toR(custo)+' (+'+toR(diff)+')</div></div>';
@@ -13026,7 +13039,7 @@ function _doCompartilhar(){
  if(v.orc2&&fromR(v.orc2.v)>0) vH+=`<div class="rfrow"><span class="rfk">Orçamento 2${v.orc2.prest?' · '+e(v.orc2.prest):''}</span><span class="rfv">${toR(fromR(v.orc2.v))}</span></div>`;
  if(v.men>0) vH+=`<div class="rfrow" style="font-weight:700"><span class="rfk">Menor Orçamento (utilizado)</span><span class="rfv">${toR(v.men)}</span></div>`;
  if((v.apr||[]).length>0){vH+=`<div class="rfrow" style="font-size:.76em;color:#E8E8E8;font-weight:700;border-bottom:none;padding-top:10px"><span>Itens Aprovados</span></div>`;v.apr.forEach(i=>{vH+=`<div class="rfrow"><span class="rfk">${e(i.nm||'—')}${i.vc?` <span style="font-size:.81em;color:#666">· venc. ${fmtDate(i.vc)}</span>`:''}</span><span class="rfv">${toR(fromR(i.v))}</span></div>`;});}
- if((v.neg||[]).length>0){vH+=`<div class="rfrow" style="font-size:.76em;color:#E8E8E8;font-weight:700;border-bottom:none;padding-top:10px"><span>Itens Negados</span></div>`;v.neg.forEach(i=>{vH+=`<div class="rfrow"><span class="rfk">${e(i.nm||'—')}</span><span class="rfv" style="color:#AAAAAA">-${toR(fromR(i.v))}</span></div>`;(i.macsAluguel||[]).forEach(m=>{vH+=`<div class="it-mac">Boleto Aluguel/Rescisão: ${e(m)}</div>`;});(i.macsCondom||[]).forEach(m=>{vH+=`<div class="it-mac">Condomínio: ${e(m)}</div>`;});});}
+ if((v.neg||[]).length>0){vH+=`<div class="rfrow" style="font-size:.76em;color:#E8E8E8;font-weight:700;border-bottom:none;padding-top:10px"><span>Itens Negados</span></div>`;v.neg.forEach(i=>{vH+=`<div class="rfrow"><span class="rfk">${e(i.nm||'—')}</span><span class="rfv" style="color:#AAAAAA">-${toR(fromR(i.v))}</span></div>`;(i.macsAluguel||[]).forEach(m=>{vH+=`<div class="it-mac">Boleto Aluguel/Rescisão: ${e(m)}</div>`;});(i.macsCondom||[]).forEach(m=>{vH+=`<div class="it-mac">Condom\u00EDnio: ${e(m)}</div>`;});});}
  if(v.tot!==undefined) vH+=`<div style="font-size:1.05em;font-weight:700;padding:12px 0 0;display:flex;justify-content:space-between;border-top:2px solid #1A1410;margin-top:8px"><span>Custo de Saída (Multa + Reparos)</span><span>${toR(v.tot)}</span></div>`;
 
  // Build pendências
@@ -14097,7 +14110,7 @@ function rRel(){
  cH+=`<div style="margin-bottom:16px"><div class="rcat">${e(cat.nome)}</div>`;
  if(cat.semNecessidade){cH+=`<div style="font-size:16px !important;color:#4ADE80;font-weight:600;padding:4px 0 8px">✅ Verificado — sem necessidade de envio.</div></div>`;return;}
  if(cat.docNaoEnviado){cH+=`<div style="font-size:16px !important;color:#fa0707;font-weight:600;padding:4px 0 8px">Documento não enviado.</div></div>`;return;}
- cH+=`${cat.inqNome?`<div class="rfrow"><span class="rfk">Inquilino</span><span class="rfv">${e(cat.inqNome)}${cat.inqCpf?' — CPF: '+e(cat.inqCpf):''}</span></div>`:''}
+ cH+=`${cat.inqNome?`<div class="rfrow"><span class="rfk">Inquilino</span><span class="rfv">${e(cat.inqNome)}${cat.inqCpf?' \u2014 CPF: '+e(cat.inqCpf):''}</span></div>`:''}
  ${cat.dtChavesEmail?`<div class="rfrow"><span class="rfk">Data entrega chaves/imissão</span><span class="rfv">${e(cat.dtChavesEmail.split('-').reverse().join('/'))}</span></div>`:''}
  ${cat.renomear?`<div style="font-size:16px !important;background:#1a1a1a;color:#4ADE80;font-weight:700;padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:6px">✅ Arquivos renomeados</div>`:'<div style="font-size:16px !important;background:#1a1a1a;color:#E8E8E8;font-weight:700;padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:6px">Arquivos NÃO renomeados</div>'}`;
  cat.itens.forEach((it,ii)=>{
@@ -14119,10 +14132,10 @@ function rRel(){
  if(v.orc2.macLabel)vH+=`<div class="fchk-rel">Aplique a macro: <strong>${e(v.orc2.macLabel)}</strong></div>`;}
  if(v.men>0)vH+=`<div class="rl2" style="font-weight:700"><span>Menor Orçamento (utilizado)</span><span>${toR(v.men)}</span></div>`;
  if((v.apr||[]).length>0){vH+=`<div class="rl2" style="font-size:16px !important;color:var(--mu);font-weight:700;border-bottom:none;padding-top:10px">Itens Aprovados</div>`;v.apr.forEach(i=>{vH+=`<div class="rl2"><span>${e(i.nm||'—')}${i.vc?` <span style="font-size:.81em;color:var(--mu)">· venc. ${fmtDate(i.vc)}</span>`:''}</span><span>${toR(fromR(i.v))}</span></div>`;});}
- if((v.neg||[]).length>0){vH+=`<div class="rl2" style="font-size:16px !important;color:var(--mu);font-weight:700;border-bottom:none;padding-top:10px">Itens Negados</div>`;v.neg.forEach(i=>{vH+=`<div class="rl2"><span>${e(i.nm||'—')}</span><span style="color:#AAAAAA">-${toR(fromR(i.v))}</span></div>`;(i.macsAluguel||[]).forEach(m=>{vH+=`<div class="rori" style="color:var(--brand);background:#1a1a1a;border-color:#AAAAAA">Boleto Aluguel/Rescisão: ${e(m)}</div>`;});(i.macsCondom||[]).forEach(m=>{vH+=`<div class="rori" style="color:var(--brand);background:#1a1a1a;border-color:#AAAAAA">Condomínio: ${e(m)}</div>`;});});}
- vH+=`<div class="rsep"></div><div class="rtot"><span>Custo de Saída (Multa + Reparos)</span><span>${toR(v.tot)}</span></div>`;
+ if((v.neg||[]).length>0){vH+=`<div class="rl2" style="font-size:16px !important;color:var(--mu);font-weight:700;border-bottom:none;padding-top:10px">Itens Negados</div>`;v.neg.forEach(i=>{vH+=`<div class="rl2"><span>${e(i.nm||'\u2014')}</span><span style="color:#AAAAAA">-${toR(fromR(i.v))}</span></div>`;(i.macsAluguel||[]).forEach(m=>{vH+=`<div class="rori" style="color:var(--brand);background:#1a1a1a;border-color:#AAAAAA">Boleto Aluguel/Rescisão: ${e(m)}</div>`;});(i.macsCondom||[]).forEach(m=>{vH+=`<div class="rori" style="color:var(--brand);background:#1a1a1a;border-color:#AAAAAA">Condom\u00EDnio: ${e(m)}</div>`;});});}
+ vH+=`<div class="rsep"></div><div class="rtot"><span>Custo de Sa\u00EDda (Multa + Reparos)</span><span>${toR(v.tot)}</span></div>`;
  document.getElementById('mc').innerHTML=`
- <div class="phd"><h1>Relatório Final</h1><p class="sub">Gerado em ${hoje()}${CID?' · ID: <strong>'+e(CID)+'</strong>':''}</p></div>
+ <div class="phd"><h1>Relatório Final</h1><p class="sub">Gerado em ${hoje()}${CID?' \u00B7 ID: <strong>'+e(CID)+'</strong>':''}</p></div>
  <div class="rw">
  <div class="rsec">Dados do Contrato</div>${fH}
  <div class="rseps"></div>
@@ -14708,19 +14721,19 @@ function detectarTipoRescisao(contractData) {
   var confianca = 0;
 
   // Inadimplência: referência a débito, atraso, cobrança
-  if (/inadimpl|d[eé]bito|atraso|cobran|execu[çc][aã]o/i.test(texto)) {
+  if (/inadimpl|d[e\u00E9]bito|atraso|cobran|execu[\u00E7c][a\u00E3]o/i.test(texto)) {
     tipo = 'inadimplencia'; confianca = 0.85;
   }
   // Danos: orçamento, reparo, dano
-  else if (/dano|reparo|or[çc]amento|pintura|reforma/i.test(texto)) {
+  else if (/dano|reparo|or[\u00E7c]amento|pintura|reforma/i.test(texto)) {
     tipo = 'danos'; confianca = 0.80;
   }
   // Término: fim de prazo, não renovação
-  else if (/t[eé]rmino|encerramento|n[aã]o.renov|vencimento.do.prazo/i.test(texto)) {
+  else if (/t[e\u00E9]rmino|encerramento|n[a\u00E3]o.renov|vencimento.do.prazo/i.test(texto)) {
     tipo = 'termino'; confianca = 0.80;
   }
   // Amigável: distrato, acordo mútuo
-  else if (/distrato|acordo|m[úu]tuo|amig[aá]vel/i.test(texto)) {
+  else if (/distrato|acordo|m[\u00FAu]tuo|amig[a\u00E1]vel/i.test(texto)) {
     tipo = 'amigavel'; confianca = 0.85;
   }
   // Default: amigável se não identificado claramente
@@ -14789,7 +14802,7 @@ function calcularELancarMulta() {
   // Parse multa string — e.g. "3 aluguéis", "2.5 aluguéis", "3 meses"
   var multa_str = String(f.multa_contratual || f.multa_pac || '');
   var meses = 0;
-  var m = multa_str.match(/(\d+[.,]?\d*)\s*(?:alugu[eé]is?|m[eê]s|meses|vezes)/i);
+  var m = multa_str.match(/(\d+[.,]?\d*)\s*(?:alugu[e\u00E9]is?|m[e\u00EA]s|meses|vezes)/i);
   if (m) {
     meses = parseFloat(m[1].replace(',', '.'));
   }
@@ -14863,7 +14876,7 @@ function detectarInadimplencia() {
   if (dtInicio && dtChaves) {
     var mesesContrato = Math.round((new Date(dtChaves) - new Date(dtInicio)) / 86400000 / 30);
     var mesesMinimos = 12; // default
-    var vm = vigencia.match(/(\d+)\s*m[eê]s/i);
+    var vm = vigencia.match(/(\d+)\s*m[e\u00EA]s/i);
     if (vm) mesesMinimos = parseInt(vm[1]);
 
     if (mesesContrato < mesesMinimos) {
@@ -14994,13 +15007,13 @@ function validarCNPJ(cnpj) {
 
 // IA#9: Detect and auto-deny "pintura de área comum" in orcamentos
 var IA9_DENY_PATTERNS = [
-  {pat: /pintura.*[aá]rea.*comum|[aá]rea.*comum.*pintura/i, reason: 'Pintura de área comum é responsabilidade do condomínio'},
+  {pat: /pintura.*[a\u00E1]rea.*comum|[a\u00E1]rea.*comum.*pintura/i, reason: 'Pintura de área comum é responsabilidade do condomínio'},
   {pat: /pintura.*varanda.*descoberta|varanda.*descoberta.*pintura/i, reason: 'Pintura de varanda descoberta (área externa) — responsabilidade do proprietário'},
   {pat: /pintura.*fachada|fachada.*pintura/i, reason: 'Pintura de fachada — responsabilidade do condomínio'},
-  {pat: /manuten[çc][aã]o.*jardim|jardim.*manuten[çc][aã]o/i, reason: 'Manutenção de jardim — não é responsabilidade do inquilino'},
+  {pat: /manuten[\u00E7c][a\u00E3]o.*jardim|jardim.*manuten[\u00E7c][a\u00E3]o/i, reason: 'Manutenção de jardim — não é responsabilidade do inquilino'},
   {pat: /limpeza.*piscina|piscina.*limpeza/i, reason: 'Limpeza de piscina — não é responsabilidade do inquilino'},
-  {pat: /higieniza[çc][aã]o.*sof[aá]|higieniza[çc][aã]o.*colch[aã]o/i, reason: 'Higienização de móveis do proprietário — não é responsabilidade do inquilino'},
-  {pat: /infiltra[çc][aã]o.*parede|laje.*infiltra[çc][aã]o/i, reason: 'Infiltração estrutural — responsabilidade do proprietário'},
+  {pat: /higieniza[\u00E7c][a\u00E3]o.*sof[a\u00E1]|higieniza[\u00E7c][a\u00E3]o.*colch[a\u00E3]o/i, reason: 'Higienização de móveis do proprietário — não é responsabilidade do inquilino'},
+  {pat: /infiltra[\u00E7c][a\u00E3]o.*parede|laje.*infiltra[\u00E7c][a\u00E3]o/i, reason: 'Infiltração estrutural — responsabilidade do proprietário'},
 ];
 
 function verificarItensNegarAutomatico(orcText) {
@@ -16082,19 +16095,19 @@ function autoFillMacro(txt){
    txt=txt.replace(/para o e-mail cadastrado na Plataforma/g,'para '+emailInq+' (e-mail cadastrado na Plataforma)');
  }
  if(f.endereco){
-   txt=txt.replace(/Endereço completo do imóvel(?!:)/g,'Endereço completo do imóvel: '+f.endereco);
+   txt=txt.replace(/Endere\u00E7o completo do im\u00F3vel(?!:)/g,'Endereço completo do imóvel: '+f.endereco);
  }
  if(f.inquilino){
-   txt=txt.replace(/locatário\(a\)\s+xxxxxx/gi,'locatário(a) '+f.inquilino);
+   txt=txt.replace(/locat\u00E1rio\(a\)\s+xxxxxx/gi,'locatário(a) '+f.inquilino);
    txt=txt.replace(/\bxxxxx\b/g,f.inquilino);
  }
- if(f.imobiliaria)txt=txt.replace(/imobiliária\s+xxxxxx/gi,'imobiliária '+f.imobiliaria);
+ if(f.imobiliaria)txt=txt.replace(/imobili\u00E1ria\s+xxxxxx/gi,'imobiliária '+f.imobiliaria);
  if(dtDesoc){
-   txt=txt.replace(/Data da desocupação(?![\/:])/g,'Data da desocupação: '+dtDesoc);
-   txt=txt.replace(/Data da desocupação\/entrega das chaves(?!:)/g,'Data da desocupação/entrega das chaves: '+dtDesoc);
+   txt=txt.replace(/Data da desocupa\u00E7\u00E3o(?![\/:])/g,'Data da desocupação: '+dtDesoc);
+   txt=txt.replace(/Data da desocupa\u00E7\u00E3o\/entrega das chaves(?!:)/g,'Data da desocupação/entrega das chaves: '+dtDesoc);
  }
  // ── Mark remaining unfilled placeholders ─────────────────────────────
- txt=txt.replace(/\(Informações Faltantes\)/g,'(⚠ preencher)');
+ txt=txt.replace(/\(Informa\u00E7\u00F5es Faltantes\)/g,'(⚠ preencher)');
  txt=txt.replace(/\{[A-Z][^}]{2,40}\}/g,function(m){return m;});
  return txt;
 }
@@ -17082,7 +17095,7 @@ function iaFmt(text){
     c = c.replace(/_/g,' ').replace(/-/g,' ');
     var h=e(c);
     h=h.replace(/\bCONFORME\b/g,'<span style="color:#4ADE80;font-weight:700">CONFORME</span>');
-    h=h.replace(/\bPENDENTE CRÍTICO\b/g,'<span style="color:#f87171;font-weight:800">PENDENTE CRÍTICO</span>');
+    h=h.replace(/\bPENDENTE CR\u00CDTICO\b/g,'<span style="color:#f87171;font-weight:800">PENDENTE CRÍTICO</span>');
     h=h.replace(/\bPENDENTE\b/g,'<span style="color:#c8963c;font-weight:700">PENDENTE</span>');
     h=h.replace(/\bAUSENTE\b/g,'<span style="color:#f87171;font-weight:700">AUSENTE</span>');
     h=h.replace(/\bDIVERGENTE\b/g,'<span style="color:#f87171;font-weight:700">DIVERGENTE</span>');
@@ -17145,7 +17158,7 @@ var OCR_STATE = {
 
 function normalizeOCRValue(raw){
   if(!raw&&raw!==0)return 0;
-  var s=String(raw).trim().replace(/[R$€£¥\u00a0\s]/g,'');
+  var s=String(raw).trim().replace(/[R$\u20AC\u00A3\u00A5\u00a0\s]/g,'');
   if(!s)return 0;
   var br=s.match(/^(\d{1,3}(?:\.\d{3})*)(,(\d{1,2}))?$/);
   if(br)return parseFloat(br[1].replace(/\./g,'')+(br[3]?'.'+br[3]:''))||0;
@@ -19403,7 +19416,7 @@ function _autoExtractFromIA(key, text) {
   // Extract data de desocupação/entrega
   if (!D.form.dt_desocupacao) {
     var datePatterns = [
-      /data de desocupa[cç][aã]o[:\s]+([\d]{1,2}\/[\d]{1,2}\/[\d]{2,4})/i,
+      /data de desocupa[c\u00E7][a\u00E3]o[:\s]+([\d]{1,2}\/[\d]{1,2}\/[\d]{2,4})/i,
       /data de entrega[:\s]+([\d]{1,2}\/[\d]{1,2}\/[\d]{2,4})/i,
       /entrega das chaves[:\s]+([\d]{1,2}\/[\d]{1,2}\/[\d]{2,4})/i,
       /desocupado[\s\S]{0,20}([\d]{1,2}\/[\d]{1,2}\/[\d]{2,4})/i,
@@ -19416,13 +19429,13 @@ function _autoExtractFromIA(key, text) {
 
   // Extract inquilino name from contrato IA
   if (key === 'contrato' && !D.form.inquilino) {
-    var nameMatch = text.match(/(?:locat\u00e1rio|inquilino)[:\s]+([A-Z\u00C0-\u00DA][a-zA-Z\u00C0-\u00FA\s]{3,40})/i);
+    var nameMatch = text.match(/(?:locat\u00E1rio|inquilino)[:\s]+([A-Z\u00C0-\u00DA][a-zA-Z\u00C0-\u00FA\s]{3,40})/i);
     if (nameMatch) { D.form.inquilino = nameMatch[1].trim(); updated++; }
   }
 
   // Extract aluguel value
   if (!D.form.aluguel) {
-    var aluguelMatch = text.match(/(?:aluguel|valor locatício)[:\s]*R\$[\s]*([\d.,]+)/i);
+    var aluguelMatch = text.match(/(?:aluguel|valor locat\u00EDcio)[:\s]*R\$[\s]*([\d.,]+)/i);
     if (aluguelMatch) { D.form.aluguel = aluguelMatch[1]; updated++; }
   }
 
@@ -20390,7 +20403,7 @@ function iaGerarRelatorio(){
       var clean=IA_RESULTS[k].replace(/<JSON>[\s\S]*?<\/JSON>/g,'').trim();
       sections.push(clean);
       sections.push('');
-      var pMatch=clean.match(/PENDENCIAS[\s\S]*?(?=##|──|$)/i);
+      var pMatch=clean.match(/PENDENCIAS[\s\S]*?(?=##|\u2500\u2500|$)/i);
       if(pMatch){
         var pText=pMatch[0].replace(/^.*PENDENCIAS[^\n]*/i,'').trim();
         if(pText&&pText.length>5)pendencias.push('['+docNames[k]+'] '+pText);
@@ -20889,9 +20902,9 @@ function loriToggle(){LORI_OPEN=!LORI_OPEN;var panel=document.getElementById('lo
   var _fab=document.getElementById('lori-fab-badge');if(_fab)_fab.style.display='none';setTimeout(function(){var i=document.getElementById('lori-input');if(i)i.focus();},100);}else{panel.classList.remove('open');fab.style.display='flex';}}
 function loriAdd(role,text,typing){var msgs=document.getElementById('lori-msgs');if(!msgs)return;
 var _mc=msgs.querySelectorAll('.lori-msg:not(#lori-typing-id)');if(_mc.length>=50&&_mc[0])_mc[0].remove();var ex=document.getElementById('lori-typing-id');if(ex)ex.remove();var div=document.createElement('div');div.className='lori-msg '+role;if(typing){div.id='lori-typing-id';div.innerHTML='<div class="lori-msg-av"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAHX0lEQVR42u2be4xUdxXHP+d3H3N39jG7sAtiayyxxFAqiVSKxGrjQjEiaCuJZKOwkWr8g4cSkqKx9h/RFKtoa7EtSVseKSYm2rClbbYWa0l22eVReQToAxFrpbx3Z3fnsTNzf8c/ZnZYym5Ts8vCwvySO5nMzSTnfM75fX/nnJsrqsqNvAw3+CoBKAEoASgBKAEoASgBKAEoASgBKAEoAbimVmpHs56cMfWSVjX+21/p+4u+eclvJxvuHVI7615tR7ue/5NKIgG5HBrvxB47RrjvDZxde4n+ZGXe8Wc2KE+tJ7P7IDXtLcX/dsyYptF059AMUNURvzrWrtELt39a42VG46DdhasHNAGaEjQ+rlrP3jdXOz9Rq3HQ+E11mmh5TfP//4V23FSrCdALK5fqUGyRkRqInN+6UbM1NQRPPoHb1Izrg0Z8MAZE8sHo+1CLWIv0ZMnWlpOcfQ/OnK/inzhB+NwWvH++hx91SRihpjsj1/wW6F6/TrM7X8NTg9/UjNRWEOZySC4EaxERVARUi5eKoJUREIdg7x5kWxNOyuKXu0hVQKorjfP73wzZthHJgPO15WqnTye6qw0pRNtkc6gIYSaLWnByYAQIDOq69Nkl1kIYgu9jwpAwGZKpjWEee5SqhkYZqm1XPAPiD/1Yg/NJdO8+TGiRbJYwA5nxMdzuFOlH1hJMm0G6+SVsWxvO8WMEZ86CCKKKOg44DqpCctIktH423oIFOPEeTn3lS/qx5p1DgnDFj8Hc5Mnk5t2D251EjUNi/MdJ/W4t4dIV2EQGOXGCirvuFnvuHBotzzusIJCHkFdq1IANApzjxzDf/x7Zr82n7M6ZXJMZ0N30vIZbN5JraSeiIZk1azAHD+Cev0CuNoazYwfO6p+SefckMraO+At/1uDJZ/AALctvgb4TqmhoGBJr348FcoAuvZ/qn6+Va0oDUvvaNPHDH+G1tRMRSKxahm5vxp81izDiE3nkMdyC0Cdv+xRm8WJIpNCnniBIpFDfze/3gk2qms8Ca8lWVZC9fSoy4WbchQupmvt1GQ6bhw1Az86/a/a+eZR3JbAOaC9YwJYBkSi9q1ZhkimktRW3vQ0vbbF9RkQNuF7R8f41CiIYlJQfUHOuS4Y7W4cNwIUZUzW6+xC23CE3dQqZSZOhrg4vGpBLpglTSewtE9ExY3EiESLPbsTbvQc8A7kcA3mmhf2P60JniuzqlcQeXjesEIZNA8oOHiI35VaS87+ByfbivP0m9sA/0GQSPwiwFVVkDh8h29jIuO8skXh1teYaGvCylgG9L6S+AliL8YTw1b9yTWZAYvsLmv7uYrIPPgCHj+D3Wvyb61AFe/oM9p1j8J/30OXLyB08gP+Xbbg2xHhePvr9KkEB1BEktIRiMHkjQSADxOK9w7sNhqu+P/mzBz5STd7x1HqNf+te7aoKNAmaqvQ1WV2myVigiepAE2OimoqgnWOi+n79TE0GjiYqfU3GAo0btPuVl3U4+5Kr0gyd2dOqHS81acf9jdoVGE2AJgtXArRzbJWe/uVD2jFtiiY9KQAo027Qri3PDiuAq9IO131uppye80WNLvkBYcO3yb3+N/TIYdRauO0zyMzp+Bs2ENl/ON8PhBd1QlMJrkkR/L9F87N3IA2LkC9Mh/p6zNy5aBiib72FWbEC//h/IRYgoc0LYkEnRMz1AcDUz0HWPU5k9x5syx76pFgAE4BWB5ALi61yUbX9yPUBQFDUhmhVWbH27/NVrS2kvRSFungkxmLXBwD75lGMLXidyxbP/g89rRww1dXXx1A0u30bjqE4EJF+0Vb9QNoXWmN8oeLuWTLqAfS82qzu661QGYC1lzvbLxNU9WJJ7HnXx1g8s3oVfl+tP/AGuRRIHwyrox9Ax6rlGnnjMFRELot+X6AH1ABjkHSWRMtOHbUA4ls3qVn3OE51GZoLB5O7gSEYg+TAvvvv0ZsB4fJlBFEPVXvZxOcDjSCqcokYKuAA9sD+0Qng/Oy7NNrZg/VdNLTF/X2584OIvLWIJ4TNL48+AB1/eFS9HS0Qi6L92t8PLZREEdFLxSEawdt/lK4/bho2HRiR5wKdEydocOoc1jNFlRsMgqoOcE/y2gCICr1BhOqzcRkVGdD564fVP3EKDbzBJb7/DHDAeYXN33Nd6OnF1o4bPVtAt27GeIL2q/gGi/6g94xBXBftSJL8/B2MOfqOjAoAydad6h59G6KRfCnbL8r6EbJBRTCeh0n3ku1M0btkEWN37R09pXDvls146TBfwjpO8UnwQBCK341BjYM4DibdS9iRJDVxIjy3iTFPbx72sfgV7QadL9eTbt+Nc+AQrgXxAN8H10HEFGTNABZRRUKLJtOQhRDITr4VGhupWf2gXCkbR+QU6HqxSe2L29G2Vpx/HUe6U0h4cRqugArYcg/7yVvQ6XfizZtP5YKFcqVtk6vxxkj3jldUT5+Ejs581CsrkPETqJw7X0baFim9MnODrxKAEoASgBKAEoASgBKAEoASgBKAG3T9D8vmKFNvIlCUAAAAAElFTkSuQmCC" style="width:22px;height:22px;object-fit:contain;background:#fff;border-radius:2px;padding:1px"></div><div class="lori-bubble"><div class="lori-typing"><div class="lori-dot"></div><div class="lori-dot"></div><div class="lori-dot"></div></div></div>';}else{var t=String(text||''),badge='';var _t=t;
-if(/\bNAO ACEITAR\b|\bNÃO ACEITAR\b|\bNEGAR\b/i.test(_t))badge='<div class="lori-decision nok">NAO ACEITAR</div>';
+if(/\bNAO ACEITAR\b|\bN\u00C3O ACEITAR\b|\bNEGAR\b/i.test(_t))badge='<div class="lori-decision nok">NAO ACEITAR</div>';
 else if(/\bACEITAR\b.*\bcom ressalvas\b|\bACEITAR\b.*\bdesde que\b/i.test(_t))badge='<div class="lori-decision warn">VERIFICAR (c/ ressalvas)</div>';
-else if(/\bACEITAR\b|\bAPROVADO\b/i.test(_t)&&!/\bNÃO\b|\bNAO\b/i.test(_t))badge='<div class="lori-decision ok">ACEITAR</div>';
+else if(/\bACEITAR\b|\bAPROVADO\b/i.test(_t)&&!/\bN\u00C3O\b|\bNAO\b/i.test(_t))badge='<div class="lori-decision ok">ACEITAR</div>';
 else if(/\bVERIFICAR\b|\bPENDENTE\b/i.test(_t))badge='<div class="lori-decision warn">VERIFICAR</div>';var fmt=t.split('\n').join('<br>');div.innerHTML='<div class="lori-msg-av">'+(role==='bot'?'<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAHX0lEQVR42u2be4xUdxXHP+d3H3N39jG7sAtiayyxxFAqiVSKxGrjQjEiaCuJZKOwkWr8g4cSkqKx9h/RFKtoa7EtSVseKSYm2rClbbYWa0l22eVReQToAxFrpbx3Z3fnsTNzf8c/ZnZYym5Ts8vCwvySO5nMzSTnfM75fX/nnJsrqsqNvAw3+CoBKAEoASgBKAEoASgBKAEoASgBKAEoAbimVmpHs56cMfWSVjX+21/p+4u+eclvJxvuHVI7615tR7ue/5NKIgG5HBrvxB47RrjvDZxde4n+ZGXe8Wc2KE+tJ7P7IDXtLcX/dsyYptF059AMUNURvzrWrtELt39a42VG46DdhasHNAGaEjQ+rlrP3jdXOz9Rq3HQ+E11mmh5TfP//4V23FSrCdALK5fqUGyRkRqInN+6UbM1NQRPPoHb1Izrg0Z8MAZE8sHo+1CLWIv0ZMnWlpOcfQ/OnK/inzhB+NwWvH++hx91SRihpjsj1/wW6F6/TrM7X8NTg9/UjNRWEOZySC4EaxERVARUi5eKoJUREIdg7x5kWxNOyuKXu0hVQKorjfP73wzZthHJgPO15WqnTye6qw0pRNtkc6gIYSaLWnByYAQIDOq69Nkl1kIYgu9jwpAwGZKpjWEee5SqhkYZqm1XPAPiD/1Yg/NJdO8+TGiRbJYwA5nxMdzuFOlH1hJMm0G6+SVsWxvO8WMEZ86CCKKKOg44DqpCctIktH423oIFOPEeTn3lS/qx5p1DgnDFj8Hc5Mnk5t2D251EjUNi/MdJ/W4t4dIV2EQGOXGCirvuFnvuHBotzzusIJCHkFdq1IANApzjxzDf/x7Zr82n7M6ZXJMZ0N30vIZbN5JraSeiIZk1azAHD+Cev0CuNoazYwfO6p+SefckMraO+At/1uDJZ/AALctvgb4TqmhoGBJr348FcoAuvZ/qn6+Va0oDUvvaNPHDH+G1tRMRSKxahm5vxp81izDiE3nkMdyC0Cdv+xRm8WJIpNCnniBIpFDfze/3gk2qms8Ca8lWVZC9fSoy4WbchQupmvt1GQ6bhw1Az86/a/a+eZR3JbAOaC9YwJYBkSi9q1ZhkimktRW3vQ0vbbF9RkQNuF7R8f41CiIYlJQfUHOuS4Y7W4cNwIUZUzW6+xC23CE3dQqZSZOhrg4vGpBLpglTSewtE9ExY3EiESLPbsTbvQc8A7kcA3mmhf2P60JniuzqlcQeXjesEIZNA8oOHiI35VaS87+ByfbivP0m9sA/0GQSPwiwFVVkDh8h29jIuO8skXh1teYaGvCylgG9L6S+AliL8YTw1b9yTWZAYvsLmv7uYrIPPgCHj+D3Wvyb61AFe/oM9p1j8J/30OXLyB08gP+Xbbg2xHhePvr9KkEB1BEktIRiMHkjQSADxOK9w7sNhqu+P/mzBz5STd7x1HqNf+te7aoKNAmaqvQ1WV2myVigiepAE2OimoqgnWOi+n79TE0GjiYqfU3GAo0btPuVl3U4+5Kr0gyd2dOqHS81acf9jdoVGE2AJgtXArRzbJWe/uVD2jFtiiY9KQAo027Qri3PDiuAq9IO131uppye80WNLvkBYcO3yb3+N/TIYdRauO0zyMzp+Bs2ENl/ON8PhBd1QlMJrkkR/L9F87N3IA2LkC9Mh/p6zNy5aBiib72FWbEC//h/IRYgoc0LYkEnRMz1AcDUz0HWPU5k9x5syx76pFgAE4BWB5ALi61yUbX9yPUBQFDUhmhVWbH27/NVrS2kvRSFungkxmLXBwD75lGMLXidyxbP/g89rRww1dXXx1A0u30bjqE4EJF+0Vb9QNoXWmN8oeLuWTLqAfS82qzu661QGYC1lzvbLxNU9WJJ7HnXx1g8s3oVfl+tP/AGuRRIHwyrox9Ax6rlGnnjMFRELot+X6AH1ABjkHSWRMtOHbUA4ls3qVn3OE51GZoLB5O7gSEYg+TAvvvv0ZsB4fJlBFEPVXvZxOcDjSCqcokYKuAA9sD+0Qng/Oy7NNrZg/VdNLTF/X2584OIvLWIJ4TNL48+AB1/eFS9HS0Qi6L92t8PLZREEdFLxSEawdt/lK4/bho2HRiR5wKdEydocOoc1jNFlRsMgqoOcE/y2gCICr1BhOqzcRkVGdD564fVP3EKDbzBJb7/DHDAeYXN33Nd6OnF1o4bPVtAt27GeIL2q/gGi/6g94xBXBftSJL8/B2MOfqOjAoAydad6h59G6KRfCnbL8r6EbJBRTCeh0n3ku1M0btkEWN37R09pXDvls146TBfwjpO8UnwQBCK341BjYM4DibdS9iRJDVxIjy3iTFPbx72sfgV7QadL9eTbt+Nc+AQrgXxAN8H10HEFGTNABZRRUKLJtOQhRDITr4VGhupWf2gXCkbR+QU6HqxSe2L29G2Vpx/HUe6U0h4cRqugArYcg/7yVvQ6XfizZtP5YKFcqVtk6vxxkj3jldUT5+Ejs581CsrkPETqJw7X0baFim9MnODrxKAEoASgBKAEoASgBKAEoASgBKAG3T9D8vmKFNvIlCUAAAAAElFTkSuQmCC" style="width:22px;height:22px;object-fit:contain;background:#fff;border-radius:2px;padding:1px">':'eu')+'</div><div class="lori-bubble">'+badge+fmt+'</div>';}msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
 function loriChip(el){
   var i=document.getElementById('lori-input');if(!i)return;

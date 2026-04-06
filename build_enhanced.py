@@ -2573,36 +2573,278 @@ def build():
         "frame-ancestors 'none'"
         '">\n'
     )
-    css_block = '\n' + CSP + '<style id="loft-enhancements-css">\n' + ENHANCED_CSS + '\n</style>\n'
+    # Early error capture script + CSS
+    EARLY_SCRIPT = (
+        '<script id="loft-early-errorcatch">\n'
+        '(function(){\n'
+        '  var _loftErrors=[];\n'
+        '  window.addEventListener("error",function(ev){\n'
+        '    var msg=(ev.message||"")+(ev.filename?" @ "+ev.filename:"")+(ev.lineno?" :"+ev.lineno:"");\n'
+        '    _loftErrors.push(msg);\n'
+        '    if(msg.toLowerCase().indexOf("regular expression")>=0||msg.toLowerCase().indexOf("syntax")>=0){\n'
+        '      console.error("[LOFT-ERR] Caught:",msg);\n'
+        '    }\n'
+        '  },true);\n'
+        '  window._loftGetErrors=function(){ return _loftErrors; };\n'
+        '})();\n'
+        '</script>\n'
+    )
+    css_block = '\n' + CSP + EARLY_SCRIPT + '<style id="loft-enhancements-css">\n' + ENHANCED_CSS + '\n</style>\n'
     content = content[:head_pos] + css_block + content[head_pos:]
 
-    # ── Source-level patches on original JS ──────────────────────────
-    # Fix Unicode char-class ranges that newer Chrome V8 rejects.
-    # Replace literal accented chars in regex char classes with \uXXXX escapes.
-    content = content.replace(
-        '/(?:locat\\u00e1rio|inquilino)[:\\\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\\\s]{3,40})/i',
-        '/(?:locat\\u00e1rio|inquilino)[:\\\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\\\s]{3,40})/i'
-    )
-    # The actual string in the source file uses literal chars — replace them
-    content = content.replace(
-        '[A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA',
-        '[A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA'
-    )
-    # Direct replacement of the literal regex pattern in original source
-    old_regex = '/(?:locat\u00e1rio|inquilino)[:\\s]+([A-Z\u00C0-\u00DA][a-zA-Z\u00C0-\u00FA\\s]{3,40})/i'
-    new_regex = '/(?:locat\\u00e1rio|inquilino)[:\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\s]{3,40})/i'
-    if old_regex in content:
-        content = content.replace(old_regex, new_regex)
-        print("Patched: locatario regex (Unicode escapes)")
-    # Fallback: replace the char class directly using bytes
+    # ── Nuclear regex fix: escape ALL non-ASCII chars in ALL JS regex literals ──
+    # Eliminates any "Range out of order" errors from accented chars in regexes.
     import re as _re
-    def _fix_accented_ranges(m):
-        s = m.group(0)
-        # Replace literal À-Ú with \u00C0-\u00DA
-        s = s.replace('\u00C0-\u00DA', '\\u00C0-\\u00DA')
-        s = s.replace('\u00C0-\u00FA', '\\u00C0-\\u00FA')
-        return s
-    content = _re.sub(r'/\[(?:[^\]\n]|\\.)*\]/[gimsuy]*', _fix_accented_ranges, content)
+
+    def _escape_nonascii_in_regex_literal(regex_str):
+        """Given a JS regex literal string like /[À-Ú]/gi, escape all non-ASCII chars."""
+        # Parse: leading /, content, closing /, flags
+        if not regex_str.startswith('/'):
+            return regex_str
+        # Find the closing /
+        i = 1
+        in_class = False
+        escaped = False
+        while i < len(regex_str):
+            c = regex_str[i]
+            if escaped:
+                escaped = False
+                i += 1
+                continue
+            if c == '\\':
+                escaped = True
+                i += 1
+                continue
+            if c == '[':
+                in_class = True
+            elif c == ']':
+                in_class = False
+            elif c == '/' and not in_class:
+                # Found closing slash
+                pattern = regex_str[1:i]
+                flags = regex_str[i+1:]
+                # Escape all non-ASCII chars in the pattern
+                def esc(ch):
+                    cp = ord(ch)
+                    if cp > 127:
+                        return '\\u{:04X}'.format(cp)
+                    return ch
+                new_pattern = ''.join(esc(c) for c in pattern)
+                return '/' + new_pattern + '/' + flags
+            i += 1
+        return regex_str  # malformed, return as-is
+
+    def _patch_script_block(script_text):
+        """Scan a JS block and escape non-ASCII chars in all regex literals."""
+        result = []
+        i = 0
+        n = len(script_text)
+        # Simple tokenizer state
+        in_line_comment = False
+        in_block_comment = False
+        in_string_single = False
+        in_string_double = False
+        in_template = False
+        prev_token_type = 'operator'  # tracks whether / is regex or division
+
+        while i < n:
+            c = script_text[i]
+
+            # Handle block comments
+            if in_block_comment:
+                result.append(c)
+                if c == '*' and i+1 < n and script_text[i+1] == '/':
+                    result.append('/')
+                    i += 2
+                    in_block_comment = False
+                else:
+                    i += 1
+                continue
+
+            # Handle line comments
+            if in_line_comment:
+                result.append(c)
+                if c == '\n':
+                    in_line_comment = False
+                i += 1
+                continue
+
+            # Handle single-quoted strings
+            if in_string_single:
+                result.append(c)
+                if c == '\\' and i+1 < n:
+                    result.append(script_text[i+1])
+                    i += 2
+                elif c == "'":
+                    in_string_single = False
+                    prev_token_type = 'value'
+                    i += 1
+                else:
+                    i += 1
+                continue
+
+            # Handle double-quoted strings
+            if in_string_double:
+                result.append(c)
+                if c == '\\' and i+1 < n:
+                    result.append(script_text[i+1])
+                    i += 2
+                elif c == '"':
+                    in_string_double = False
+                    prev_token_type = 'value'
+                    i += 1
+                else:
+                    i += 1
+                continue
+
+            # Handle template literals (backtick strings)
+            if in_template:
+                result.append(c)
+                if c == '\\' and i+1 < n:
+                    result.append(script_text[i+1])
+                    i += 2
+                elif c == '`':
+                    in_template = False
+                    prev_token_type = 'value'
+                    i += 1
+                else:
+                    i += 1
+                continue
+
+            # Check for comment start
+            if c == '/' and i+1 < n:
+                if script_text[i+1] == '/':
+                    in_line_comment = True
+                    result.append(c)
+                    i += 1
+                    continue
+                if script_text[i+1] == '*':
+                    in_block_comment = True
+                    result.append(c)
+                    i += 1
+                    continue
+
+            # Check for string start
+            if c == "'":
+                in_string_single = True
+                result.append(c)
+                i += 1
+                continue
+            if c == '"':
+                in_string_double = True
+                result.append(c)
+                i += 1
+                continue
+            if c == '`':
+                in_template = True
+                result.append(c)
+                i += 1
+                continue
+
+            # Check for potential regex literal
+            if c == '/' and prev_token_type in ('operator', 'keyword', 'open'):
+                # This looks like a regex literal
+                j = i
+                in_cls = False
+                esc2 = False
+                j += 1
+                while j < n:
+                    ch = script_text[j]
+                    if esc2:
+                        esc2 = False
+                        j += 1
+                        continue
+                    if ch == '\\':
+                        esc2 = True
+                        j += 1
+                        continue
+                    if ch == '[':
+                        in_cls = True
+                    elif ch == ']':
+                        in_cls = False
+                    elif ch == '/' and not in_cls:
+                        j += 1
+                        # Consume flags
+                        while j < n and script_text[j] in 'gimsuy':
+                            j += 1
+                        break
+                    elif ch in '\n\r':
+                        # Unterminated regex - treat / as division
+                        break
+                    j += 1
+                else:
+                    # No closing / found - treat as division
+                    result.append(c)
+                    i += 1
+                    prev_token_type = 'operator'
+                    continue
+
+                regex_literal = script_text[i:j]
+                # Check if it has any non-ASCII chars
+                if any(ord(ch) > 127 for ch in regex_literal):
+                    patched = _escape_nonascii_in_regex_literal(regex_literal)
+                    result.append(patched)
+                    print(f"  Escaped non-ASCII in regex: {regex_literal[:60]} -> {patched[:60]}")
+                else:
+                    result.append(regex_literal)
+                i = j
+                prev_token_type = 'value'
+                continue
+
+            # Track prev_token_type for operator/value context
+            if c in '=(<>!&|^~,;?:{}[+-*%':
+                prev_token_type = 'operator'
+            elif c == ')' or c == ']':
+                prev_token_type = 'value'
+            elif c.isalpha() or c == '_' or c == '$':
+                # Could be identifier or keyword
+                # Read full identifier
+                j = i
+                while j < n and (script_text[j].isalnum() or script_text[j] in '_$'):
+                    j += 1
+                word = script_text[i:j]
+                result.append(word)
+                i = j
+                keywords_before_regex = {
+                    'return', 'typeof', 'instanceof', 'in', 'of', 'new',
+                    'delete', 'void', 'throw', 'case', 'else', 'yield', 'await'
+                }
+                if word in keywords_before_regex:
+                    prev_token_type = 'keyword'
+                else:
+                    prev_token_type = 'value'
+                continue
+            elif c.isdigit():
+                prev_token_type = 'value'
+            elif c in ' \t\n\r':
+                pass  # whitespace doesn't change token type
+
+            result.append(c)
+            i += 1
+
+        return ''.join(result)
+
+    # Process all <script> blocks in the content
+    def _process_scripts(html):
+        out = []
+        pos = 0
+        for m in _re.finditer(r'(<script[^>]*>)(.*?)(</script>)', html, _re.DOTALL):
+            tag_open, script_body, tag_close = m.group(1), m.group(2), m.group(3)
+            # Skip scripts with src= attribute (external), skip our own enhanced script
+            if 'src=' in tag_open or 'loft-enhancements-js' in tag_open:
+                out.append(html[pos:m.end()])
+                pos = m.end()
+                continue
+            patched_body = _patch_script_block(script_body)
+            out.append(html[pos:m.start()])
+            out.append(tag_open + patched_body + tag_close)
+            pos = m.end()
+        out.append(html[pos:])
+        return ''.join(out)
+
+    print("Running comprehensive regex non-ASCII escape pass...")
+    content = _process_scripts(content)
+    print("Regex escape pass complete.")
 
     # Recalculate </body> position after CSS insertion
     last_body = content.rfind('</body>')
