@@ -22584,8 +22584,8 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })();
 
-    // UX-IA-LAYOUT: Reorder IA tab — batch action buttons go to bottom,
-    //   individual document accordions appear first.
+    // UX-IA-LAYOUT: Reorder IA tab — document accordions appear first (top),
+    //   API Key + KB editor + batch action buttons go to bottom.
     //   Approach: wrap rValidarIA so we run AFTER every render.
     (function() {
       function _reorderIATab() {
@@ -22596,62 +22596,99 @@ document.addEventListener('DOMContentLoaded', function() {
         var kids = Array.prototype.slice.call(panel.children);
         if (kids.length < 3) return;
 
-        // Classify each direct child:
-        //   "batch"   = has iaRunAll OR iaCruzarDocumentos (but NOT a config .ia-section)
-        //   "content" = everything else (header, config sections, individual accordions)
-        var batchEls = [], contentEls = [];
+        // Classify each direct child into three buckets:
+        //   "top"     = progress-bar, contract badge, page header (.phd)
+        //   "middle"  = document accordions (contain ia-drop- zones)
+        //   "bottom"  = API Key .ia-section, KB .ia-section, batch buttons,
+        //               running-progress indicator, unified-report section
+        var topEls = [], middleEls = [], bottomEls = [];
+
         kids.forEach(function(el) {
           if (!el) return;
-          var src = el.getAttribute ? (el.getAttribute('onclick') || '') : '';
-          // Also search inner buttons for batch actions
+
+          // TOP: progress bar or page header
+          if (el.id === 'ia-progress-bar' ||
+              (el.classList && el.classList.contains('ia-progress-overview')) ||
+              (el.classList && el.classList.contains('phd'))) {
+            topEls.push(el);
+            return;
+          }
+
+          // TOP: contract-type badge (small conditional div, no ia-section class)
+          var html = el.innerHTML || '';
+          if (!el.classList.contains('ia-section') &&
+              el.tagName === 'DIV' &&
+              html.indexOf('ia-drop-') === -1 &&
+              html.indexOf('iaRunAll') === -1 &&
+              html.indexOf('iaCruzarDocumentos') === -1 &&
+              html.indexOf('ia-api-key') === -1 &&
+              html.indexOf('ia-kb-') === -1 &&
+              html.indexOf('ia-key-input') === -1 &&
+              el.querySelectorAll('textarea').length === 0 &&
+              el.querySelectorAll('input[type="password"]').length === 0 &&
+              el.querySelectorAll('.ia-doc-accordion').length === 0 &&
+              el.querySelectorAll('[id^="ia-drop-"]').length === 0 &&
+              el.querySelectorAll('[id^="ia-acc-"]').length === 0) {
+            topEls.push(el);
+            return;
+          }
+
+          // BOTTOM: API Key section (has password input or ia-api-key id)
+          if (el.querySelectorAll('input[type="password"]').length > 0 ||
+              el.querySelector('#ia-api-key') ||
+              html.indexOf('ia-api-key') !== -1 ||
+              html.indexOf('ia-key-input') !== -1) {
+            bottomEls.push(el);
+            return;
+          }
+
+          // BOTTOM: KB editor section (has textarea)
+          if (el.querySelectorAll('textarea').length > 0 ||
+              html.indexOf('ia-kb-') !== -1) {
+            bottomEls.push(el);
+            return;
+          }
+
+          // BOTTOM: batch action buttons (iaRunAll / iaCruzarDocumentos / iaRelatorio)
           var btns = el.querySelectorAll ? el.querySelectorAll('[onclick]') : [];
-          var hasRunAll = false, hasCruzar = false;
+          var hasBatch = false;
           for (var i = 0; i < btns.length; i++) {
             var oc = btns[i].getAttribute('onclick') || '';
-            if (oc.indexOf('iaRunAll') !== -1) hasRunAll = true;
-            if (oc.indexOf('iaCruzarDocumentos') !== -1) hasCruzar = true;
+            if (oc.indexOf('iaRunAll') !== -1 ||
+                oc.indexOf('iaCruzarDocumentos') !== -1 ||
+                oc.indexOf('iaRelatorio') !== -1) {
+              hasBatch = true;
+              break;
+            }
           }
-          var isCfg = el.classList && (el.classList.contains('ia-section') || el.classList.contains('phd'));
-          if ((hasRunAll || hasCruzar) && !isCfg) {
-            batchEls.push(el);
-          } else {
-            contentEls.push(el);
+          if (hasBatch && !el.classList.contains('ia-section')) {
+            bottomEls.push(el);
+            return;
           }
+
+          // MIDDLE: document accordion sections (contain drop zones or accordion ids)
+          if (el.querySelectorAll('[id^="ia-drop-"]').length > 0 ||
+              el.querySelectorAll('[id^="ia-acc-"]').length > 0 ||
+              el.querySelectorAll('.ia-doc-accordion').length > 0 ||
+              html.indexOf('ia-drop-') !== -1) {
+            middleEls.push(el);
+            return;
+          }
+
+          // Default: treat as bottom (running-progress, unified-report, etc.)
+          bottomEls.push(el);
         });
 
-        if (batchEls.length === 0) return;
+        // Require at least some document accordions in middle to proceed
+        if (middleEls.length === 0) return;
 
-        // Move all children out, then re-insert in new order
+        // Re-insert in order: top → middle → bottom
         var frag = document.createDocumentFragment();
-        contentEls.forEach(function(el) { frag.appendChild(el); });
+        topEls.forEach(function(el) { frag.appendChild(el); });
+        middleEls.forEach(function(el) { frag.appendChild(el); });
+        bottomEls.forEach(function(el) { frag.appendChild(el); });
 
-        // Separator + label
-        var sep = document.createElement('div');
-        sep.style.cssText = 'border-top:1px solid #1c1c1c;margin:14px 0 10px;';
-        frag.appendChild(sep);
-        var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:Rajdhani,sans-serif;font-size:10px;font-weight:700;color:#3a3a3a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;';
-        lbl.textContent = 'Validacao em Conjunto';
-        frag.appendChild(lbl);
-
-        // Add batch elements — deduplicate: prefer the one with iaCruzarDocumentos (full topbar)
-        var hasFullBar = batchEls.some(function(el){
-          var btns = el.querySelectorAll('[onclick]');
-          for (var i=0;i<btns.length;i++) if (btns[i].getAttribute('onclick').indexOf('iaCruzarDocumentos')!==-1) return true;
-          return false;
-        });
-        batchEls.forEach(function(el) {
-          // If we have the full topbar, skip the old-style runAll-only div
-          if (hasFullBar) {
-            var btns = el.querySelectorAll('[onclick]');
-            var hasCruzar = false;
-            for (var i=0;i<btns.length;i++) if (btns[i].getAttribute('onclick').indexOf('iaCruzarDocumentos')!==-1) hasCruzar=true;
-            if (!hasCruzar) return; // skip old batch (duplicate functionality)
-          }
-          frag.appendChild(el);
-        });
-
-        // Clear panel and reinsert in correct order
+        // Clear panel and reinsert
         while (panel.firstChild) panel.removeChild(panel.firstChild);
         panel.appendChild(frag);
       }
