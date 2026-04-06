@@ -1339,7 +1339,140 @@ ENHANCED_JS = """
         });
       };
     }
+
+    // 5. Cleanup setIntervals on page unload (AUDIT: memory leaks)
+    window.addEventListener('pagehide', function() {
+      // Best-effort: clear timers that are in our control
+      if (typeof _ringTimer !== 'undefined' && _ringTimer) clearInterval(_ringTimer);
+      if (typeof _autosaveInterval !== 'undefined' && _autosaveInterval) clearInterval(_autosaveInterval);
+    });
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-SECURITY — Security patches from audit findings
+  // ═══════════════════════════════════════════════════════════
+  (function applySecurityPatches() {
+    // 1. Intercept localStorage.getItem/setItem for 'loft_ia_key'
+    //    Routes to sessionStorage with XOR obfuscation.
+    //    All existing calls to localStorage.getItem('loft_ia_key') work transparently.
+    var _SEED = 'loft_checklist_v3';
+
+    function _xorEnc(str) {
+      var s = _SEED.split('');
+      var keys = [];
+      for (var i = 0; i < 256; i++) keys.push((s[i % s.length].charCodeAt(0) ^ i) & 0xFF);
+      var out = [];
+      for (var i = 0; i < str.length; i++) out.push(String.fromCharCode(str.charCodeAt(i) ^ keys[i % keys.length]));
+      return btoa(out.join(''));
+    }
+
+    function _xorDec(encoded) {
+      try {
+        var str = atob(encoded);
+        var s = _SEED.split('');
+        var keys = [];
+        for (var i = 0; i < 256; i++) keys.push((s[i % s.length].charCodeAt(0) ^ i) & 0xFF);
+        var out = [];
+        for (var i = 0; i < str.length; i++) out.push(String.fromCharCode(str.charCodeAt(i) ^ keys[i % keys.length]));
+        return out.join('');
+      } catch(e) { return ''; }
+    }
+
+    var KEY_NAME = 'loft_ia_key';
+    var SESSION_KEY = '_lft_k';
+
+    try {
+      var _origGet = Storage.prototype.getItem;
+      var _origSet = Storage.prototype.setItem;
+      var _origRem = Storage.prototype.removeItem;
+
+      Storage.prototype.getItem = function(key) {
+        if (this === localStorage && key === KEY_NAME) {
+          // Prefer sessionStorage
+          var enc = _origGet.call(sessionStorage, SESSION_KEY);
+          if (enc) return _xorDec(enc);
+          // Migrate from plaintext localStorage
+          var plain = _origGet.call(localStorage, KEY_NAME);
+          if (plain && plain.startsWith('AIza')) {
+            _origSet.call(sessionStorage, SESSION_KEY, _xorEnc(plain));
+            _origSet.call(localStorage, KEY_NAME, ''); // clear plaintext
+          }
+          return plain || '';
+        }
+        return _origGet.call(this, key);
+      };
+
+      Storage.prototype.setItem = function(key, value) {
+        if (this === localStorage && key === KEY_NAME) {
+          // Redirect to sessionStorage
+          _origSet.call(sessionStorage, SESSION_KEY, _xorEnc(String(value)));
+          _origSet.call(localStorage, KEY_NAME, ''); // clear any plaintext
+          return;
+        }
+        return _origSet.call(this, key, value);
+      };
+    } catch(ex) {
+      // Storage prototype patching not supported — skip silently
+    }
+
+    // 2. Enhance e() to also escape quotes (prevents attribute-context XSS)
+    //    e.g. <input value="${e(val)}"> where val = '" onload="evil()'
+    if (typeof window.e === 'function') {
+      var _origE = window.e;
+      window.e = function(s) {
+        var base = _origE(s);
+        // Add quote escaping for attribute safety
+        return base.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      };
+    }
+
+    // 3. Patch autoMarkChecklistFromIA to require minimum confidence threshold
+    //    AUDIT BUG6: items marked without confidence check
+    var _origAutoMark = typeof window.autoMarkChecklistFromIA === 'function'
+      ? window.autoMarkChecklistFromIA : null;
+    if (_origAutoMark) {
+      window.autoMarkChecklistFromIA = function(extracted, key) {
+        // Only auto-mark if extraction confidence >= 70%
+        var conf = extracted && extracted._confidence && extracted._confidence.score;
+        if (typeof conf === 'number' && conf < 70) {
+          console.warn('[LOFT-SEC] autoMark skipped — confidence ' + conf + '% < 70%');
+          return;
+        }
+        return _origAutoMark(extracted, key);
+      };
+    }
+
+    // 4. Fix duplicate _refreshLoriSys — ensure the correct (longer) version is active
+    //    AUDIT: two definitions at lines 20064 and 20074; we enforce correct one
+    setTimeout(function() {
+      if (typeof window._refreshLoriSys === 'function') {
+        var _curSrc = window._refreshLoriSys.toString();
+        // The correct version checks buildLoriSystemPrompt properly
+        if (_curSrc.indexOf('buildLoriSystemPrompt') === -1) {
+          window._refreshLoriSys = function() {
+            try {
+              if (typeof buildLoriSystemPrompt !== 'undefined' && typeof LORI_SYS !== 'undefined') {
+                LORI_SYS = buildLoriSystemPrompt();
+              }
+            } catch(ex) {}
+          };
+        }
+      }
+    }, 1000);
+
+    // 5. Add global error handler for silent catch blocks (AUDIT: 178 empty catches)
+    //    Log to console.warn in a structured way so devtools show useful data
+    window.__loftErrorCount = 0;
+    var _origOnError = window.onerror;
+    // Don't replace existing error handler — only add telemetry
+    window.addEventListener('error', function(e) {
+      if (!e.filename || !e.filename.includes('loft')) return;
+      window.__loftErrorCount++;
+      if (window.__loftErrorCount <= 20) { // don't spam
+        console.warn('[LOFT-AUDIT] Unhandled error #' + window.__loftErrorCount + ':', e.message, 'at', e.lineno);
+      }
+    });
+  })();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -1369,8 +1502,21 @@ def build():
     print(f"Real </head> at char {head_pos} (line {content[:head_pos].count(chr(10))+1})")
     print(f"Last </body> at char {last_body} (line {content[:last_body].count(chr(10))+1})")
 
-    # Inject CSS before </head>
-    css_block = '\n<style id="loft-enhancements-css">\n' + ENHANCED_CSS + '\n</style>\n'
+    # Inject CSP meta tag + CSS before </head>
+    CSP = (
+        '<meta http-equiv="Content-Security-Policy" content="'
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https: blob:; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "frame-ancestors 'none'"
+        '">\n'
+    )
+    css_block = '\n' + CSP + '<style id="loft-enhancements-css">\n' + ENHANCED_CSS + '\n</style>\n'
     content = content[:head_pos] + css_block + content[head_pos:]
 
     # Recalculate </body> position after CSS insertion
