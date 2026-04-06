@@ -2891,16 +2891,24 @@ function hoje(){return new Date().toLocaleDateString('pt-BR');}
 function agora(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function fmtDate(s){if(!s)return'';const m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:s;}
 var _toastActive=0,_toastQueue=[];
-function toast(msg,err,type){var _bkg=err||type==='error'?'rgba(248,113,113,.92)':type==='info'?'rgba(74,144,226,.92)':type==='warn'?'rgba(200,150,50,.9)':'rgba(22,22,22,.97)';if(_toastActive>=3){_toastQueue.push({m:msg,isErr:err});return;}_showToast(msg,err);}
-function _showToast(m,isErr){
+function toast(msg,err,type){
+ // type: 'info'=#555, 'warn'=#c8963c, 'error'=#f87171, 'success'=#4ade80
+ if(_toastActive>=3){_toastQueue.push({m:msg,isErr:err,type:type});return;}
+ _showToast(msg,err,type);
+}
+function _showToast(m,isErr,type){
  var region=document.getElementById('toast-live');
  if(!region){region=document.createElement('div');region.id='toast-live';region.setAttribute('aria-live','polite');region.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;';document.body.appendChild(region);}
  _toastActive++;
- var dur=isErr?5000:3100;
+ var dur=isErr||type==='error'?5000:3100;
  var t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;
- if(isErr)t.style.cssText='border-color:#662222;color:#f87171;';
+ // Type-based left border color
+ var _resolvedType=type||(isErr?'error':'default');
+ var _borderColor=_resolvedType==='error'?'#f87171':_resolvedType==='warn'?'#c8963c':_resolvedType==='success'?'#4ade80':_resolvedType==='info'?'#555':'var(--brand)';
+ t.style.borderLeft='3px solid '+_borderColor;
+ if(isErr||_resolvedType==='error')t.style.color='#f87171';
  region.appendChild(t);
- setTimeout(function(){t.remove();_toastActive--;if(_toastQueue.length){var n=_toastQueue.shift();_showToast(n.m,n.isErr);}},dur);
+ setTimeout(function(){t.remove();_toastActive--;if(_toastQueue.length){var n=_toastQueue.shift();_showToast(n.m,n.isErr,n.type);}},dur);
 }
 function showModal(opts){
  // opts: {ico, title, body, confirmTxt, cancelTxt, onConfirm, onCancel}
@@ -10532,7 +10540,7 @@ ${reasonOpts}</div>`;
  const nBtn=`<button class="sbn sbn-n" onclick="selCat(${nxt.id})">Próxima: ${e(nxt.nome)} →</button>`;
  document.getElementById('mc').innerHTML=`
  <div class="autofill-banner" style="display:none"><div class="ab-txt"></div><button class="ab-btn" onclick="ENGINE.applyAllInferences()">Aplicar IA</button><button class="ab-btn" onclick="undoAIPrefill()" style="background:none;border:1px solid #444;color:#888;margin-left:6px">↩ Desfazer</button></div>
- <div class="phd"><h1>${e(cat.nome)}</h1><p class="sub">${tot} itens · ${isOk_all?'✅ Tudo OK':fl>0?'❌ '+fl+' problema'+(fl!==1?'s':''):ok>0?ok+' verificados':'Aguardando IA'}</p></div>
+ <div class="phd loft-sticky-header"><h1>${e(cat.nome)}</h1><p class="sub">${tot} itens · ${isOk_all?'✅ Tudo OK':fl>0?'❌ '+fl+' problema'+(fl!==1?'s':''):ok>0?ok+' verificados':'Aguardando IA'}</p></div>
 <div class="qbar">
    <span class="qbar-lbl">Ação rápida:</span>
    <button class="qb qb-ok" onclick="qMarkAllOk(${cat.id})" title="Marcar todos como verificados">✓ Tudo OK</button>
@@ -10580,6 +10588,7 @@ ${reasonOpts}</div>`;
  <div style="font-size:.85em;color:#fa0707;line-height:1.5">${cat.id===4?'Sem assinatura, o <strong>e-mail de desocupação é obrigatório</strong>.':'Sem assinatura do inquilino, <strong>negamos reparos</strong>.'}</div>
  </div>
  </div>`:''}
+ ${ok===0&&fl===0&&tot>0?'<div class="loft-empty-hint">Nenhum item marcado ainda</div>':''}
  ${cards}
  ${fl>0?renderAutoSuggest('cat_'+cat.id):''}
  </div>`}
@@ -13694,6 +13703,68 @@ input:focus, select:focus, textarea:focus {
 .linha-card.tipo-danos:not(.sem-orc) {
   border-left: 3px solid rgba(74,222,128,.4) !important;
 }
+/* ─────────────────────────────────────────────────────────── */
+
+/* ── LOFT-UX: Focus ring improvements (accessibility) ─────── */
+:focus-visible {
+  outline: 2px solid #fa0707 !important;
+  outline-offset: 2px !important;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #fa0707 !important;
+  outline-offset: 2px !important;
+}
+
+/* ── LOFT-UX: Sticky section headers ──────────────────────── */
+.loft-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ── LOFT-UX: Keyboard shortcuts floating button ──────────── */
+#loft-help-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 36px;
+  height: 36px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 50%;
+  color: #888;
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+  transition: background .15s, color .15s, border-color .15s;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+}
+#loft-help-btn:hover {
+  background: #1e1e1e;
+  border-color: rgba(250,7,7,.4);
+  color: #fa0707;
+}
+
+/* ── LOFT-UX: Empty state hint for checklist ─────────────── */
+.loft-empty-hint {
+  font-size: .75em;
+  color: #444;
+  text-align: center;
+  padding: 18px 0 10px;
+  letter-spacing: .04em;
+  font-style: italic;
+}
+
 /* ─────────────────────────────────────────────────────────── */
 
 </style>
@@ -21403,10 +21474,14 @@ document.addEventListener('DOMContentLoaded', function() {
       '<div id="loft-kb-modal">' +
         '<div id="loft-kb-title">⌨ ATALHOS DE TECLADO</div>' +
         '<div class="loft-kb-grid">' +
-          makeShortcut('Command Palette', ['Ctrl', 'K']) +
+          makeShortcut('Abrir paleta de comandos', ['Ctrl', 'K']) +
+          makeShortcut('Salvar progresso', ['Ctrl', 'S']) +
+          makeShortcut('Desfazer', ['Ctrl', 'Z']) +
+          makeShortcut('Refazer', ['Ctrl', 'Shift', 'Z']) +
+          makeShortcut('Confirmar ID do contrato', ['Ctrl', 'Enter']) +
+          makeShortcut('Fechar modal/painel', ['Esc']) +
           makeShortcut('Atalhos de teclado', ['?']) +
           makeShortcut('Modo Foco', ['Shift', 'F']) +
-          makeShortcut('Fechar modal', ['Esc']) +
         '</div>' +
         '<button id="loft-kb-close">FECHAR</button>' +
       '</div>';
@@ -21415,6 +21490,24 @@ document.addEventListener('DOMContentLoaded', function() {
     bd.addEventListener('click', function(e) {
       if (e.target === bd || e.target.id === 'loft-kb-close') closeKb();
     });
+
+    // Floating ? button
+    var helpBtn = document.createElement('button');
+    helpBtn.id = 'loft-help-btn';
+    helpBtn.textContent = '?';
+    helpBtn.title = 'Atalhos de teclado';
+    helpBtn.setAttribute('aria-label', 'Mostrar atalhos de teclado');
+    helpBtn.addEventListener('click', function() {
+      var backdrop = document.getElementById('loft-kb-backdrop');
+      if (backdrop) {
+        if (backdrop.classList.contains('loft-open')) {
+          backdrop.classList.remove('loft-open');
+        } else {
+          backdrop.classList.add('loft-open');
+        }
+      }
+    });
+    document.body.appendChild(helpBtn);
   }
 
   function makeShortcut(desc, keys) {
