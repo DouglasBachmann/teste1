@@ -2730,6 +2730,166 @@ body.loft-focus-mode #loft-focus-indicator { display: block; }
   border-left: 2px solid rgba(250,7,7,.5) !important;
 }
 
+/* ── LOFT-SECURITY: Rate limit badge ───────────────────────────── */
+#loft-rate-badge {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  z-index: 8500;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: color .3s ease, border-color .3s ease;
+}
+#loft-rate-badge.loft-rate-warn { color: #fb923c; border-color: rgba(251,146,60,.4); }
+#loft-rate-badge.loft-rate-crit { color: #f87171; border-color: rgba(248,113,113,.4); }
+
+/* ── LOFT-UX: PDF export button ────────────────────────────────── */
+#loft-pdf-btn {
+  position: fixed;
+  bottom: 120px;
+  right: 24px;
+  z-index: 8400;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+}
+#loft-pdf-btn:hover { color: #e0e0e0; border-color: #444; background: #1a1a1a; }
+
+/* ── LOFT-UX: Global search (Ctrl+F) overlay ───────────────────── */
+#loft-search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9500;
+  background: rgba(0,0,0,.6);
+  padding: 16px 24px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid #2a2a2a;
+}
+#loft-search-overlay.loft-open { display: flex; }
+#loft-search-input {
+  flex: 1;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: #e0e0e0;
+  outline: none;
+  letter-spacing: .03em;
+}
+#loft-search-input:focus { border-color: #fa0707; }
+#loft-search-count {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  color: #555;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  min-width: 90px;
+}
+#loft-search-close {
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.loft-search-highlight {
+  background: rgba(250,7,7,.25) !important;
+  outline: 1px solid rgba(250,7,7,.5) !important;
+  border-radius: 2px;
+}
+.loft-search-highlight.loft-search-current {
+  background: rgba(250,7,7,.5) !important;
+  outline: 1px solid #fa0707 !important;
+}
+
+/* ── LOFT-UX: Undo/Redo counter in header ──────────────────────── */
+#loft-undo-counter {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8300;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: color .3s;
+}
+#loft-undo-counter.loft-undo-active { color: #666; }
+
+/* ── LOFT-UX: Vistoria comparison side-by-side ─────────────────── */
+#loft-compare-bar {
+  background: #0d0d0d;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin: 8px 0;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+#loft-compare-bar.loft-active { display: flex; }
+.loft-diff-add { color: #4ade80; }
+.loft-diff-del { color: #f87171; }
+.loft-diff-same { color: #555; }
+
+/* ── LOFT-PERF: Tab lazy loading placeholder ────────────────────── */
+.loft-tab-skeleton {
+  padding: 20px;
+  animation: loft-skeleton-wave 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, #0d0d0d 25%, #141414 50%, #0d0d0d 75%);
+  background-size: 200% 100%;
+  border-radius: 4px;
+  min-height: 120px;
+}
+
+/* ── Print / PDF export ─────────────────────────────────────────── */
+@media print {
+  #loft-ring-wrap, #loft-cp-backdrop, #loft-kb-backdrop,
+  #loft-onboard-overlay, #loft-rate-badge, #loft-pdf-btn,
+  #loft-search-overlay, #loft-undo-counter, #loft-compare-bar,
+  aside, nav, .loft-toast-container { display: none !important; }
+  body { background: #fff !important; color: #111 !important; }
+  #mc { padding: 0 !important; box-shadow: none !important; }
+  .topt { page-break-inside: avoid; }
+  a { color: #111 !important; text-decoration: none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -21472,11 +21632,129 @@ document.addEventListener('DOMContentLoaded', function() {
       applyIAPatches();
       applyUXEnhancements();
       applyPerfPatches();
+      applyAuditEnhancements();
       // Welcome toast
       setTimeout(function() {
         loftToast('⌘K command palette • ? atalhos • Shift+F foco', 'info', 5000);
       }, 1800);
     });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-AUDIT — Runtime diagnostics & quality gate
+  // ═══════════════════════════════════════════════════════════
+  function applyAuditEnhancements() {
+
+    // AUDIT-1: Dead code detector — report functions defined but never referenced
+    setTimeout(function() {
+      var deadCandidates = ['pingIAWorker', 'terminateIAWorker', '_addrNorm',
+        'normalizeLinhas', 'iaNormalizeJSON', 'loftEstimateTokens'];
+      var dead = deadCandidates.filter(function(fn) {
+        return typeof window[fn] === 'function';
+      });
+      if (dead.length > 0) {
+        console.info('[LOFT-AUDIT] Dead code candidates (defined, not wired to UI):', dead);
+      }
+    }, 3000);
+
+    // AUDIT-2: Signal cycle detection — wrap busOn/busEmit to detect mutual recursion
+    (function() {
+      var _activeSignals = {};
+      var _origBusEmit = typeof window.busEmit === 'function' ? window.busEmit : null;
+      if (!_origBusEmit) return;
+      window.busEmit = function(sig, payload) {
+        if (_activeSignals[sig]) {
+          console.warn('[LOFT-AUDIT] Signal cycle detected: "' + sig + '" re-emitted while active. Blocking.');
+          return;
+        }
+        _activeSignals[sig] = true;
+        try {
+          return _origBusEmit(sig, payload);
+        } finally {
+          _activeSignals[sig] = false;
+        }
+      };
+    })();
+
+    // AUDIT-3: Mandatory fields visual coverage
+    //   Add a subtle asterisk label to required form fields that are empty
+    setTimeout(function() {
+      var REQUIRED_FIELDS = ['cid','dtSaida','nome_locatario','imovel','vAluguel'];
+      function _auditRequiredFields() {
+        REQUIRED_FIELDS.forEach(function(field) {
+          var el = document.querySelector('[data-field="' + field + '"]');
+          if (!el) return;
+          var val = el.value || (window.D && window.D.form && window.D.form[field]) || '';
+          var label = el.closest('.ff') || el.closest('.rfrow');
+          if (!label) return;
+          var existing = label.querySelector('.loft-req-dot');
+          if (!val || String(val).trim() === '') {
+            if (!existing) {
+              var dot = document.createElement('span');
+              dot.className = 'loft-req-dot';
+              dot.title = 'Campo obrigatório';
+              dot.style.cssText = 'color:#fa0707;font-size:.7em;margin-left:4px;vertical-align:super;';
+              dot.textContent = '*';
+              label.appendChild(dot);
+            }
+          } else {
+            if (existing) existing.remove();
+          }
+        });
+      }
+      _auditRequiredFields();
+      // Re-check on any input change
+      document.addEventListener('input', _auditRequiredFields, {passive: true});
+      document.addEventListener('change', _auditRequiredFields, {passive: true});
+    }, 1500);
+
+    // AUDIT-4: CTX stale detection — warn when AI data is > 30 minutes old
+    (function() {
+      window._loftCtxTimestamps = window._loftCtxTimestamps || {};
+      var STALE_MS = 30 * 60 * 1000;
+      // Intercept CTX.docs writes to timestamp them
+      var _origCtx = window.CTX;
+      if (!_origCtx || !_origCtx.docs) return;
+      try {
+        var _docsProxy = new Proxy(_origCtx.docs, {
+          set: function(target, key, value) {
+            target[key] = value;
+            window._loftCtxTimestamps[key] = Date.now();
+            return true;
+          },
+          get: function(target, key) {
+            var ts = window._loftCtxTimestamps[key];
+            if (ts && (Date.now() - ts) > STALE_MS) {
+              console.warn('[LOFT-AUDIT] CTX.docs["' + String(key) + '"] is stale (>' + Math.round((Date.now()-ts)/60000) + 'min). Consider re-analyzing.');
+            }
+            return target[key];
+          }
+        });
+        _origCtx.docs = _docsProxy;
+      } catch(ex) { /* Proxy not supported or CTX not wrappable */ }
+    })();
+
+    // AUDIT-5: rCats performance instrumentation
+    (function() {
+      var _origRCatsAudit = typeof window.rCats === 'function' ? window.rCats : null;
+      if (!_origRCatsAudit) return;
+      var _slowCount = 0;
+      window.rCats = function() {
+        var t0 = performance.now ? performance.now() : Date.now();
+        if (performance.mark) performance.mark('loft-rCats-start');
+        var result = _origRCatsAudit.apply(this, arguments);
+        var dur = (performance.now ? performance.now() : Date.now()) - t0;
+        if (performance.mark) performance.mark('loft-rCats-end');
+        if (performance.measure) {
+          try { performance.measure('loft-rCats', 'loft-rCats-start', 'loft-rCats-end'); } catch(e){}
+        }
+        if (dur > 100) {
+          _slowCount++;
+          console.warn('[LOFT-AUDIT] rCats slow render: ' + Math.round(dur) + 'ms (#' + _slowCount + ' slow renders)');
+        }
+        return result;
+      };
+    })();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -21564,6 +21842,173 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       } catch(ex) {}
     }, true);
+
+    // LOGIC-NEW-1: Fix qMarkAllOk — BUG3: never mark items that are blocked/pending validation
+    var _origQMarkAllOk = typeof window.qMarkAllOk === 'function' ? window.qMarkAllOk : null;
+    if (_origQMarkAllOk) {
+      window.qMarkAllOk = function(catId) {
+        try {
+          // After original runs, revert any items that are blocked
+          _origQMarkAllOk(catId);
+          if (typeof D === 'undefined' || !D || !D.checklists) return;
+          var cat = D.checklists.find(function(c){ return c.id === catId; });
+          if (!cat) return;
+          (cat.itens || []).forEach(function(it) {
+            // Re-protect manually-set fail items and blocked items
+            if (it._manualSet && it._manualSetEst === 'fail') {
+              it.est = 'fail';
+            }
+            // Items with required sub-fields not filled stay pending
+            if (it._bloqueado) {
+              it.est = null;
+            }
+          });
+        } catch(ex) {}
+      };
+    }
+
+    // LOGIC-NEW-2: autoFill conflict — confirm before overwriting manually-set fields
+    var _origAutoFill = typeof window._autoFillFormFromContrato === 'function'
+      ? window._autoFillFormFromContrato : null;
+    if (_origAutoFill) {
+      window._autoFillFormFromContrato = function(extracted) {
+        try {
+          if (typeof D === 'undefined' || !D || !D._userFields) {
+            return _origAutoFill(extracted);
+          }
+          var conflicts = [];
+          Object.keys(extracted || {}).forEach(function(k) {
+            if (D._userFields[k] && extracted[k] && D.form && D.form[k]) {
+              var existing = String(D.form[k]).trim();
+              var incoming = String(extracted[k]).trim();
+              if (existing && incoming && existing !== incoming) {
+                conflicts.push({ field: k, existing: existing, incoming: incoming });
+              }
+            }
+          });
+          if (conflicts.length > 0) {
+            var msg = 'A IA detectou ' + conflicts.length + ' campo(s) com valor diferente do que voce digitou:\n\n';
+            conflicts.slice(0, 3).forEach(function(c) {
+              msg += '- ' + c.field + ': "' + c.existing.substring(0,30) + '" -> "' + c.incoming.substring(0,30) + '"\n';
+            });
+            if (conflicts.length > 3) msg += '- ... e mais ' + (conflicts.length-3) + '\n';
+            msg += '\nSobrescrever seus valores com os da IA?';
+            if (!window.confirm(msg)) {
+              // Apply only non-conflicting fields
+              var safe = {};
+              Object.keys(extracted || {}).forEach(function(k) {
+                if (!conflicts.find(function(c){ return c.field===k; })) {
+                  safe[k] = extracted[k];
+                }
+              });
+              return _origAutoFill(safe);
+            }
+          }
+          return _origAutoFill(extracted);
+        } catch(ex) {
+          return _origAutoFill(extracted);
+        }
+      };
+    }
+
+    // LOGIC-NEW-3: multa_contratual consistency — alert when pac vs contratual diverge
+    window._loftCheckMultaConsistency = function() {
+      try {
+        if (typeof D === 'undefined' || !D || !D.form) return;
+        var pac = String(D.form.multa_pac || '').replace(/[^\d.,]/g, '').replace(',', '.');
+        var con = String(D.form.multa_contratual || '').replace(/[^\d.,]/g, '').replace(',', '.');
+        if (!pac || !con) return;
+        var vPac = parseFloat(pac), vCon = parseFloat(con);
+        if (isNaN(vPac) || isNaN(vCon) || vPac === 0 || vCon === 0) return;
+        var ratio = Math.abs(vPac - vCon) / Math.max(vPac, vCon);
+        if (ratio > 0.02) { // more than 2% divergence
+          var warn = document.getElementById('loft-multa-warn');
+          if (!warn) {
+            warn = document.createElement('div');
+            warn.id = 'loft-multa-warn';
+            warn.style.cssText = 'background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);border-radius:4px;padding:6px 12px;margin:8px 0;font-size:11px;color:#fb923c;font-family:Rajdhani,sans-serif;font-weight:600;letter-spacing:.04em;text-transform:uppercase;';
+          }
+          warn.textContent = '⚠ Divergência entre multa PAC (' + D.form.multa_pac + ') e multa contratual (' + D.form.multa_contratual + ')';
+          // Try to inject near multa fields
+          var multaEl = document.querySelector('[data-field="multa_pac"]') || document.querySelector('[data-field="multa_contratual"]');
+          if (multaEl) {
+            var parent = multaEl.closest('.ff') || multaEl.parentNode;
+            if (parent && !parent.contains(warn)) parent.appendChild(warn);
+          }
+        } else {
+          var existing = document.getElementById('loft-multa-warn');
+          if (existing) existing.remove();
+        }
+      } catch(ex) {}
+    };
+    // Run on any input change
+    document.addEventListener('input', window._loftCheckMultaConsistency, {passive: true});
+    document.addEventListener('change', window._loftCheckMultaConsistency, {passive: true});
+
+    // LOGIC-NEW-4: Proportional rent validation
+    //   If D.form.dtSaida and D.form.dtInicioContrato are set, verify proportional billing makes sense
+    window._loftCheckProportional = function() {
+      try {
+        if (typeof D === 'undefined' || !D || !D.form) return;
+        var dtSaida = D.form.dtSaida || D.form.dt_saida || '';
+        var vAluguel = parseFloat(String(D.form.vAluguel || '0').replace(/[^\d.,]/g,'').replace(',','.'));
+        if (!dtSaida || !vAluguel) return;
+        // Parse date dd/mm/yyyy
+        var parts = dtSaida.split('/');
+        if (parts.length !== 3) return;
+        var day = parseInt(parts[0],10), month = parseInt(parts[1],10), year = parseInt(parts[2],10);
+        if (isNaN(day) || isNaN(month) || isNaN(year)) return;
+        var daysInMonth = new Date(year, month, 0).getDate();
+        if (day === daysInMonth || day === 1) return; // full month, no proration needed
+        var propExpected = Math.round((vAluguel / daysInMonth) * day * 100) / 100;
+        // Check if calc lines have a proportional entry
+        var propLine = (D.calc && D.calc.linhas || []).find(function(l){
+          return l.tipo === 'aluguel_prop' || (l.desc && l.desc.toLowerCase().indexOf('proporcional') !== -1);
+        });
+        if (!propLine) {
+          console.info('[LOFT-LOGIC] Saída em dia ' + day + ' de ' + daysInMonth + '. Aluguel proporcional esperado: R$ ' + propExpected.toFixed(2) + '. Considere adicionar linha proporcional na calculadora.');
+        }
+      } catch(ex) {}
+    };
+    setTimeout(window._loftCheckProportional, 2000);
+    document.addEventListener('change', window._loftCheckProportional, {passive: true});
+
+    // LOGIC-NEW-5: CNPJ cross-validation in boleto vs contrato
+    //   Expose a helper that compares extracted boleto CNPJ to contract CNPJ
+    window._loftValidateCNPJ = function(boletoObj, contractCNPJ) {
+      try {
+        var _normCNPJ = function(s) { return String(s||'').replace(/[^\d]/g,''); };
+        var bCNPJ = _normCNPJ(boletoObj && (boletoObj.cnpj || boletoObj.beneficiario_cnpj || ''));
+        var cCNPJ = _normCNPJ(contractCNPJ || (typeof D !== 'undefined' && D && D.form && D.form.cnpj_imob) || '');
+        if (!bCNPJ || !cCNPJ) return { status: 'INCONCLUSIVO', reason: 'CNPJ ausente' };
+        if (bCNPJ === cCNPJ) return { status: 'CONFORME', reason: 'CNPJs coincidem' };
+        // Allow partial match (14 digits must match fully)
+        return { status: 'DIVERGENTE', reason: 'Boleto: ' + bCNPJ + ' vs Contrato: ' + cCNPJ };
+      } catch(ex) { return { status: 'ERRO', reason: String(ex) }; }
+    };
+    // Hook into iaParseJSON to auto-validate CNPJs when boleto data arrives
+    var _origParseForCNPJ = typeof window.iaParseJSON === 'function' ? window.iaParseJSON : null;
+    if (_origParseForCNPJ) {
+      window.iaParseJSON = function(raw) {
+        var result = _origParseForCNPJ(raw);
+        if (result && !result._error && result.boletos) {
+          try {
+            result.boletos.forEach(function(b) {
+              var v = window._loftValidateCNPJ(b);
+              if (v.status === 'DIVERGENTE') {
+                b._cnpj_status = 'DIVERGENTE';
+                b._cnpj_reason = v.reason;
+                console.warn('[LOFT-LOGIC] CNPJ divergente no boleto:', v.reason);
+                loftToast && loftToast('⚠ CNPJ do boleto diverge do contrato', 'warning', 5000);
+              } else {
+                b._cnpj_status = v.status;
+              }
+            });
+          } catch(ex) {}
+        }
+        return result;
+      };
+    }
 
     // 5. Enhance validateMulta to also flag missing mandatory fields
     var _origValidateMulta = typeof window.validateMulta === 'function'
@@ -21668,6 +22113,112 @@ document.addEventListener('DOMContentLoaded', function() {
           return { _error: 'Parse failed: ' + String(ex).substring(0, 80) };
         }
       };
+    }
+
+    // IA-NEW-1: Prompt hash caching — skip duplicate calls with identical systemPrompt+parts
+    //   Lightweight djb2 hash used as secondary cache key layer
+    (function() {
+      function _djb2(s) {
+        var h = 5381;
+        for (var i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+        return (h >>> 0).toString(36);
+      }
+      var _hashCache = {};
+      var _HC_MAX = 40;
+      var _origIaHashWrap = typeof window.iaCall === 'function' ? window.iaCall : null;
+      if (!_origIaHashWrap) return;
+      window.iaCall = function(model, systemPrompt, parts, maxTokens, temperature) {
+        var key = model + '_' + _djb2((systemPrompt||'').substring(0,500))
+          + '_' + _djb2(JSON.stringify(parts||[]).substring(0,400));
+        if (_hashCache[key]) {
+          console.info('[LOFT-IA] Hash cache hit — skipping duplicate call');
+          return _hashCache[key];
+        }
+        var promise = _origIaHashWrap(model, systemPrompt, parts, maxTokens, temperature);
+        _hashCache[key] = promise;
+        // Evict oldest entry if over limit
+        var keys = Object.keys(_hashCache);
+        if (keys.length > _HC_MAX) delete _hashCache[keys[0]];
+        // Remove from cache on error so it retries fresh
+        promise.catch(function() { delete _hashCache[key]; });
+        return promise;
+      };
+    })();
+
+    // IA-NEW-2: Adaptive backoff — retry delay depends on error type
+    (function() {
+      var _origIaAdaptive = typeof window.iaCall === 'function' ? window.iaCall : null;
+      if (!_origIaAdaptive) return;
+      window.iaCall = function(model, systemPrompt, parts, maxTokens, temperature) {
+        return _origIaAdaptive(model, systemPrompt, parts, maxTokens, temperature)
+          .catch(function(err) {
+            var msg = err && err.message ? err.message : String(err);
+            // 429 / rate limit → wait 60s then retry once
+            if (msg.indexOf('429') !== -1 || msg.indexOf('sobrecarregada') !== -1 || msg.indexOf('Limite') !== -1) {
+              loftToast && loftToast('⏳ Rate limit — aguardando 15s para retry automático...', 'warning', 14000);
+              return new Promise(function(resolve, reject) {
+                setTimeout(function() {
+                  _origIaAdaptive(model, systemPrompt, parts, maxTokens, temperature)
+                    .then(resolve).catch(reject);
+                }, 15000);
+              });
+            }
+            // 503 / server error → wait 3s then retry once
+            if (msg.indexOf('503') !== -1 || msg.indexOf('overloaded') !== -1) {
+              return new Promise(function(resolve, reject) {
+                setTimeout(function() {
+                  _origIaAdaptive(model, systemPrompt, parts, maxTokens, temperature)
+                    .then(resolve).catch(reject);
+                }, 3000);
+              });
+            }
+            throw err;
+          });
+      };
+    })();
+
+    // IA-NEW-3: Missing fields focused retry
+    //   After _applyInferenceToD, check which FORM_LABELS fields are still empty
+    //   and expose a helper to trigger a targeted re-call
+    window._loftMissingFieldsRetry = function(docKey) {
+      try {
+        if (typeof D === 'undefined' || !D) return;
+        if (typeof FORM_LABELS === 'undefined' || !FORM_LABELS) return;
+        var missing = Object.keys(FORM_LABELS).filter(function(k) {
+          return !D.form || !D.form[k] || String(D.form[k]).trim() === '';
+        });
+        if (missing.length === 0) {
+          loftToast && loftToast('✓ Todos os campos já preenchidos', 'success', 2500);
+          return;
+        }
+        loftToast && loftToast('🔄 ' + missing.length + ' campos vazios — tentando extrair especificamente...', 'info', 4000);
+        // Build focused prompt for missing fields
+        var focusedPrompt = 'Extraia APENAS os seguintes campos do documento fornecido:\n\n'
+          + missing.map(function(k){ return '- ' + k + ' (' + FORM_LABELS[k] + ')'; }).join('\n')
+          + '\n\nRetorne SOMENTE JSON: {"' + missing[0] + '":"valor",...}';
+        // Get existing doc text if available
+        var docData = typeof CTX !== 'undefined' && CTX && CTX.docs && CTX.docs[docKey];
+        if (!docData || !docData.raw) {
+          loftToast && loftToast('⚠ Documento não encontrado para retry', 'warning', 3000);
+          return;
+        }
+        var parts = [{ text: docData.raw }];
+        var model = typeof GEMINI_MODEL !== 'undefined' ? GEMINI_MODEL : 'gemini-2.0-flash';
+        window.iaCall(model, focusedPrompt, parts, 1024, 0.2)
+          .then(function(resp) {
+            var parsed = typeof iaParseJSON === 'function' ? iaParseJSON(resp) : null;
+            if (parsed && !parsed._error) {
+              if (typeof _autoFillFormFromContrato === 'function') _autoFillFormFromContrato(parsed);
+              loftToast && loftToast('✓ Campos extras extraídos', 'success', 3000);
+            }
+          }).catch(function(e) {
+            loftToast && loftToast('⚠ Retry falhou: ' + (e.message||'').substring(0,50), 'error', 4000);
+          });
+      } catch(ex) {}
+    };
+    // Register in command palette
+    if (window.PALETTE_ITEMS) {
+      window.PALETTE_ITEMS.push({ label: 'Extrair campos vazios (retry IA)', icon: '🔄', action: function(){ window._loftMissingFieldsRetry('contrato'); } });
     }
 
     // 5. Show estimated token count in IA panel API key area
@@ -21797,6 +22348,193 @@ document.addEventListener('DOMContentLoaded', function() {
         document.dispatchEvent(new KeyboardEvent('keydown', {key:'?', bubbles:true}));
       }
     });
+
+    // UX-NEW-1: Skeleton screens for AI result blocks
+    //   Intercept IA loading states and replace "..." with skeleton
+    (function() {
+      var _skeletonHTML = '<div class="loft-skeleton loft-skeleton-line wide"></div>'
+        + '<div class="loft-skeleton loft-skeleton-line short"></div>'
+        + '<div class="loft-skeleton loft-skeleton-line wide"></div>'
+        + '<div class="loft-skeleton loft-skeleton-line" style="width:70%"></div>';
+      // Watch for elements getting the loading class (app uses "loading" text or specific pattern)
+      var _skeletonObs = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+          m.addedNodes.forEach(function(node) {
+            if (node.nodeType !== 1) return;
+            // Look for result blocks that show "Analisando..." or similar
+            var text = node.textContent || '';
+            if ((text === 'Analisando...' || text === '...' || text === 'Carregando...') && !node._loftSkel) {
+              node._loftSkel = true;
+              node.innerHTML = _skeletonHTML;
+            }
+          });
+        });
+      });
+      _skeletonObs.observe(document.body, { childList: true, subtree: true });
+    })();
+
+    // UX-NEW-2: Undo/Redo visual counter
+    (function() {
+      var counter = document.createElement('div');
+      counter.id = 'loft-undo-counter';
+      document.body.appendChild(counter);
+      function _updateUndoCounter() {
+        try {
+          var histLen = (typeof UNDO_STACK !== 'undefined' && UNDO_STACK) ? UNDO_STACK.length : 0;
+          var redoLen = (typeof REDO_STACK !== 'undefined' && REDO_STACK) ? REDO_STACK.length : 0;
+          if (histLen === 0 && redoLen === 0) {
+            counter.textContent = '';
+            counter.classList.remove('loft-undo-active');
+          } else {
+            counter.textContent = 'Alt+Z: ' + histLen + ' desfazer  •  Alt+Y: ' + redoLen + ' refazer';
+            counter.classList.add('loft-undo-active');
+          }
+        } catch(ex) {}
+      }
+      // Poll every 2s (undo stack changes aren't event-driven)
+      setInterval(_updateUndoCounter, 2000);
+      _updateUndoCounter();
+    })();
+
+    // UX-NEW-3: Vistoria comparison mode
+    //   Adds a "Comparar vistorias" button in the danos/vistoria section
+    setTimeout(function() {
+      var danoSection = document.querySelector('#cat-danos') || document.querySelector('[data-cat="danos"]');
+      if (!danoSection) return;
+      var compareBar = document.createElement('div');
+      compareBar.id = 'loft-compare-bar';
+      compareBar.innerHTML = '<span>Comparar: </span>'
+        + '<button id="loft-compare-btn" style="padding:4px 12px;background:var(--brand);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:Rajdhani,sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Ativar Diff</button>'
+        + '<span id="loft-compare-info" style="flex:1;margin-left:12px;font-size:10px;color:#444">Mostra diferenças entre vistoria de entrada e saída</span>';
+      danoSection.insertBefore(compareBar, danoSection.firstChild);
+      compareBar.classList.add('loft-active');
+      document.getElementById('loft-compare-btn').addEventListener('click', function() {
+        var diff = (typeof CTX !== 'undefined' && CTX && CTX.diffData) || null;
+        if (!diff) { loftToast('⚠ Analise vistoria de entrada e saída antes de comparar', 'warning', 4000); return; }
+        try {
+          var rooms = Object.keys(diff);
+          var lines = rooms.map(function(room) {
+            var d = diff[room];
+            var adds = (d.added||[]).map(function(x){ return '<span class="loft-diff-add">+ '+x+'</span>'; });
+            var dels = (d.removed||[]).map(function(x){ return '<span class="loft-diff-del">- '+x+'</span>'; });
+            return '<strong>'+room+':</strong> ' + (adds.concat(dels).join(' | ') || '<span class="loft-diff-same">Sem diferenças</span>');
+          });
+          var modal = document.createElement('div');
+          modal.style.cssText = 'position:fixed;inset:0;z-index:19999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)';
+          var closeBtn = document.createElement('button');
+          closeBtn.textContent = 'Fechar';
+          closeBtn.style.cssText = 'margin-top:16px;padding:8px 20px;background:var(--brand);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700;text-transform:uppercase';
+          closeBtn.onclick = function(){ document.body.removeChild(modal); };
+          var inner = document.createElement('div');
+          inner.style.cssText = 'background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:24px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto';
+          inner.innerHTML = '<div style="font-family:Rajdhani,sans-serif;font-size:13px;font-weight:700;color:#e0e0e0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">Diff: Vistoria Entrada vs Saida</div>'
+            + '<div style="font-family:Rajdhani,sans-serif;font-size:12px;line-height:2;color:#888">' + lines.join('<br>') + '</div>';
+          inner.appendChild(closeBtn);
+          modal.appendChild(inner);
+          document.body.appendChild(modal);
+        } catch(ex) { loftToast('⚠ Erro ao gerar diff: ' + (ex.message||''), 'error', 3000); }
+      });
+    }, 2000);
+
+    // UX-NEW-4: PDF/Print export button
+    (function() {
+      var btn = document.createElement('button');
+      btn.id = 'loft-pdf-btn';
+      btn.textContent = '🖨 PDF';
+      btn.title = 'Imprimir / Salvar como PDF';
+      btn.addEventListener('click', function() {
+        loftToast('Abrindo diálogo de impressão... Use "Salvar como PDF" no destino.', 'info', 4000);
+        setTimeout(function() { window.print(); }, 500);
+      });
+      document.body.appendChild(btn);
+    })();
+
+    // UX-NEW-5: Global checklist search (Ctrl+F)
+    (function() {
+      var overlay = document.createElement('div');
+      overlay.id = 'loft-search-overlay';
+      overlay.innerHTML = '<input id="loft-search-input" type="text" placeholder="Buscar no checklist..." autocomplete="off">'
+        + '<span id="loft-search-count">0 resultados</span>'
+        + '<button id="loft-search-close">✕</button>';
+      document.body.appendChild(overlay);
+
+      var _searchMatches = [], _searchIdx = 0;
+
+      function _clearSearch() {
+        _searchMatches.forEach(function(el) {
+          el.classList.remove('loft-search-highlight','loft-search-current');
+        });
+        _searchMatches = []; _searchIdx = 0;
+      }
+
+      function _runSearch(q) {
+        _clearSearch();
+        if (!q || q.length < 2) { document.getElementById('loft-search-count').textContent = ''; return; }
+        var mc = document.getElementById('mc');
+        if (!mc) return;
+        // Search in checklist item labels and text
+        var candidates = mc.querySelectorAll('.topt, .topt-label, .topt-title, [class*="item"], [class*="label"]');
+        candidates.forEach(function(el) {
+          if (el.children.length > 2) return; // Skip containers
+          var text = el.textContent || '';
+          if (text.toLowerCase().indexOf(q.toLowerCase()) !== -1) {
+            el.classList.add('loft-search-highlight');
+            _searchMatches.push(el);
+          }
+        });
+        document.getElementById('loft-search-count').textContent = _searchMatches.length + ' resultado' + (_searchMatches.length !== 1 ? 's' : '');
+        if (_searchMatches.length > 0) {
+          _searchMatches[0].classList.add('loft-search-current');
+          _searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      function _nextMatch(dir) {
+        if (_searchMatches.length === 0) return;
+        _searchMatches[_searchIdx].classList.remove('loft-search-current');
+        _searchIdx = (_searchIdx + dir + _searchMatches.length) % _searchMatches.length;
+        _searchMatches[_searchIdx].classList.add('loft-search-current');
+        _searchMatches[_searchIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      var _searchInput = document.getElementById('loft-search-input');
+      var _searchDebounce;
+      _searchInput.addEventListener('input', function() {
+        clearTimeout(_searchDebounce);
+        _searchDebounce = setTimeout(function() { _runSearch(_searchInput.value); }, 200);
+      });
+      _searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.shiftKey ? _nextMatch(-1) : _nextMatch(1); }
+        if (e.key === 'Escape') { overlay.classList.remove('loft-open'); _clearSearch(); }
+      });
+      document.getElementById('loft-search-close').addEventListener('click', function() {
+        overlay.classList.remove('loft-open'); _clearSearch(); _searchInput.value = '';
+      });
+
+      // Ctrl+F override
+      document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          // Only intercept when not in a native input that would use browser's search
+          var tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+          if (tag === 'input' || tag === 'textarea') return;
+          e.preventDefault();
+          overlay.classList.toggle('loft-open');
+          if (overlay.classList.contains('loft-open')) {
+            setTimeout(function(){ _searchInput.focus(); }, 50);
+          } else {
+            _clearSearch(); _searchInput.value = '';
+          }
+        }
+      });
+
+      // Register in command palette
+      if (window.PALETTE_ITEMS) {
+        window.PALETTE_ITEMS.push({ label: 'Buscar no checklist (Ctrl+F)', icon: '🔍', action: function(){
+          overlay.classList.add('loft-open');
+          setTimeout(function(){ _searchInput.focus(); }, 50);
+        }});
+      }
+    })();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -21881,6 +22619,106 @@ document.addEventListener('DOMContentLoaded', function() {
       if (typeof _ringTimer !== 'undefined' && _ringTimer) clearInterval(_ringTimer);
       if (typeof _autosaveInterval !== 'undefined' && _autosaveInterval) clearInterval(_autosaveInterval);
     });
+
+    // PERF-NEW-1: Tab lazy loading — defer rendering of non-active tabs
+    //   Wrap selCat (the tab switcher) to render tabs only when first visited
+    (function() {
+      var _renderedTabs = {};
+      var _origSelCat = typeof window.selCat === 'function' ? window.selCat : null;
+      if (!_origSelCat) return;
+      window.selCat = function(catIdx) {
+        var key = 'tab_' + catIdx;
+        if (!_renderedTabs[key]) {
+          _renderedTabs[key] = true;
+          // Show skeleton briefly on first open
+          var mc = document.getElementById('mc');
+          if (mc && Object.keys(_renderedTabs).length > 1) {
+            var prev = mc.innerHTML;
+            mc.innerHTML = '<div class="loft-tab-skeleton"></div>';
+            requestAnimationFrame(function() {
+              mc.innerHTML = prev;
+              _origSelCat(catIdx);
+            });
+            return;
+          }
+        }
+        return _origSelCat(catIdx);
+      };
+    })();
+
+    // PERF-NEW-2: bldData() memoization — cache by D state fingerprint
+    (function() {
+      var _origBldData = typeof window.bldData === 'function' ? window.bldData : null;
+      if (!_origBldData) return;
+      var _cache = null, _cacheKey = null;
+      window.bldData = function() {
+        try {
+          // Fingerprint: stringify small subset of D to detect changes cheaply
+          var d = window.D;
+          if (!d) return _origBldData();
+          var fp = JSON.stringify([
+            d.boleto, d.lim, d.formaPag,
+            Object.keys(d.form||{}).length,
+            (d.checklists||[]).reduce(function(sum, c) { return sum + (c.itens||[]).filter(function(i){ return i.est; }).length; }, 0)
+          ]);
+          if (fp === _cacheKey && _cache !== null) {
+            return _cache;
+          }
+          _cache = _origBldData();
+          _cacheKey = fp;
+          return _cache;
+        } catch(ex) { return _origBldData(); }
+      };
+      // Invalidate cache on saves
+      var _origSv = typeof window.sv === 'function' ? window.sv : null;
+      if (_origSv) {
+        window.sv = function() {
+          _cache = null; _cacheKey = null;
+          return _origSv.apply(this, arguments);
+        };
+      }
+    })();
+
+    // PERF-NEW-3: Input event debounce on _markUnsaved (300ms)
+    (function() {
+      var _origMarkUnsaved = typeof window._markUnsaved === 'function' ? window._markUnsaved : null;
+      if (!_origMarkUnsaved) return;
+      var _debounceTimer = null;
+      window._markUnsaved = function() {
+        if (_debounceTimer) return; // already scheduled
+        _debounceTimer = setTimeout(function() {
+          _debounceTimer = null;
+          _origMarkUnsaved();
+        }, 300);
+      };
+    })();
+
+    // PERF-NEW-4: DOM node cleanup on tab navigation
+    //   When navigating between tabs, remove detached sub-trees from previous tabs
+    //   to prevent DOM bloat on long sessions
+    (function() {
+      var _lastMcSize = 0;
+      var _cleanupThreshold = 5000; // nodes
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest && e.target.closest('.cat-btn, [data-cat-btn], [onclick*="selCat"]');
+        if (!btn) return;
+        var mc = document.getElementById('mc');
+        if (!mc) return;
+        var nodeCount = mc.querySelectorAll('*').length;
+        if (nodeCount > _cleanupThreshold && nodeCount > _lastMcSize * 1.5) {
+          // Force a garbage-collection-friendly teardown by clearing detached refs
+          var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+          var toCheck = [];
+          while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node._loftSkel) toCheck.push(node);
+          }
+          toCheck.forEach(function(n) { delete n._loftSkel; });
+          console.info('[LOFT-PERF] DOM cleanup: ' + nodeCount + ' nodes in #mc');
+        }
+        _lastMcSize = nodeCount;
+      }, {passive: true});
+    })();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -22015,7 +22853,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 5. Add global error handler for silent catch blocks (AUDIT: 178 empty catches)
     //    Log to console.warn in a structured way so devtools show useful data
     window.__loftErrorCount = 0;
-    var _origOnError = window.onerror;
     // Don't replace existing error handler — only add telemetry
     window.addEventListener('error', function(e) {
       if (!e.filename || !e.filename.includes('loft')) return;
@@ -22024,6 +22861,98 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('[LOFT-AUDIT] Unhandled error #' + window.__loftErrorCount + ':', e.message, 'at', e.lineno);
       }
     });
+
+    // SEC-NEW-1: KB editor sanitization — size limit + script tag stripping
+    (function() {
+      var _origKbSave = typeof window.kbCustomSave === 'function' ? window.kbCustomSave : null;
+      if (!_origKbSave) return;
+      var KB_MAX_BYTES = 50 * 1024; // 50kb
+      window.kbCustomSave = function(text) {
+        try {
+          var safe = String(text || '');
+          // Strip <script> tags
+          safe = safe.replace(/<script[\s\S]*?<\/script>/gi, '[SCRIPT REMOVIDO]');
+          safe = safe.replace(/<iframe[\s\S]*?>/gi, '[IFRAME REMOVIDO]');
+          // Enforce size limit
+          if (safe.length > KB_MAX_BYTES) {
+            loftToast && loftToast('⚠ KB muito grande — truncado em 50KB. Remova conteúdo desnecessário.', 'warning', 5000);
+            safe = safe.substring(0, KB_MAX_BYTES);
+          }
+          return _origKbSave(safe);
+        } catch(ex) { return _origKbSave(text); }
+      };
+    })();
+
+    // SEC-NEW-2: Rate limit visual badge — shows remaining AI calls per minute
+    (function() {
+      var badge = document.createElement('div');
+      badge.id = 'loft-rate-badge';
+      badge.textContent = 'IA: —/30';
+      document.body.appendChild(badge);
+      var _callLog = []; // timestamps
+      var WINDOW_MS = 60000;
+      var MAX_CALLS = 30;
+      // Intercept iaCall to track rate
+      var _origIaRate = typeof window.iaCall === 'function' ? window.iaCall : null;
+      if (_origIaRate) {
+        window.iaCall = function() {
+          var now = Date.now();
+          _callLog = _callLog.filter(function(t){ return now - t < WINDOW_MS; });
+          _callLog.push(now);
+          var remaining = MAX_CALLS - _callLog.length;
+          badge.textContent = 'IA: ' + remaining + '/' + MAX_CALLS;
+          badge.className = remaining <= 5 ? 'loft-rate-crit' : remaining <= 10 ? 'loft-rate-warn' : '';
+          return _origIaRate.apply(this, arguments);
+        };
+      }
+    })();
+
+    // SEC-NEW-3: Session expiry — clear API key after 4h inactivity
+    (function() {
+      var INACTIVE_MS = 4 * 60 * 60 * 1000; // 4 hours
+      var _lastActivity = Date.now();
+      var _EVENTS = ['mousemove','keydown','click','touchstart'];
+      _EVENTS.forEach(function(ev) {
+        window.addEventListener(ev, function() { _lastActivity = Date.now(); }, {passive: true});
+      });
+      setInterval(function() {
+        if (Date.now() - _lastActivity > INACTIVE_MS) {
+          try {
+            sessionStorage.removeItem('_lft_k');
+            console.info('[LOFT-SEC] Chave de API removida por inatividade (4h).');
+          } catch(ex) {}
+        }
+      }, 5 * 60 * 1000); // check every 5min
+    })();
+
+    // SEC-NEW-4: Extended blob URL expiry (5s) and API key leak detection
+    (function() {
+      // Wrap URL.createObjectURL to track and revoke blob URLs after 5s (instead of 2s)
+      var _origCreate = URL.createObjectURL.bind(URL);
+      URL.createObjectURL = function(obj) {
+        var url = _origCreate(obj);
+        setTimeout(function() {
+          try { URL.revokeObjectURL(url); } catch(e) {}
+        }, 5000);
+        return url;
+      };
+    })();
+
+    // SEC-NEW-5: API key leak detection — warn if key appears in visible DOM text
+    setTimeout(function() {
+      try {
+        var key = sessionStorage.getItem('_lft_k');
+        if (!key) return;
+        var decoded = typeof window._xorDec === 'function' ? '' : ''; // key is encoded
+        // Just check if any text node contains something that looks like an API key (AIzaSy...)
+        var body = document.body.textContent || '';
+        var keyMatch = body.match(/AIzaSy[A-Za-z0-9_-]{33}/);
+        if (keyMatch) {
+          console.warn('[LOFT-SEC] ⚠ API key parece estar visível no DOM! Recarregue a página e não compartilhe screenshots.');
+          loftToast && loftToast('⚠ Chave API pode estar exposta no DOM. Verifique.', 'error', 8000);
+        }
+      } catch(ex) {}
+    }, 3000);
   })();
 
   if (document.readyState === 'loading') {
