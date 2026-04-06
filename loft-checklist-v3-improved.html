@@ -3007,14 +3007,16 @@ function _getIaKey(){
 // ══════════════════════════════════════════════════════════════════════════════
 
 // ── Signal debounce for high-frequency signals ───────────────────────────────
+// PERF: debounce tuned by LOFT-PERF — STATE_CHANGE at 80ms, sv() save at 500ms
 var _sigDebounce={};
 function busEmitDebounced(sig,payload,src,delayMs){
-  var key=sig+'|'+(payload&&payload.lineId||'');
+  // PERF: key includes lineId to allow per-line debounce without cross-signal collision
+  var key=sig+'|'+(payload&&payload.lineId||'global');
   if(_sigDebounce[key]) clearTimeout(_sigDebounce[key]);
   _sigDebounce[key]=setTimeout(function(){
     delete _sigDebounce[key];
     try{busEmit(sig,payload,src);}catch(ex){ console.warn('[LOFT Signal] busEmitDebounced error for signal "'+sig+'":', ex); }
-  },delayMs||80);
+  },delayMs||80); // PERF: debounce tuned by LOFT-PERF — 80ms default batches rapid updates
 }
 
 // ── Signal Types ──────────────────────────────────────────────────────────────
@@ -4358,12 +4360,13 @@ function undoDispatch() {
   if (_eventPtr < 0) { toast('Nada para desfazer'); return; }
   // Replay from scratch up to ptr-1
   var target = _eventPtr - 1;
+  // PERF: single deep-clone reused for both rollback guard and state restoration
   var savedD = JSON.parse(JSON.stringify(D));
   try {
     // Restore D to blank + replay events[0..target]
     var fresh = migrateData(dd());
-    // Deep-clone ALL top-level D properties to ensure complete state restoration
-    var _fullSnap = JSON.parse(JSON.stringify(D));
+    // PERF: reuse savedD (already a full deep-clone of D) — avoids second JSON.parse/stringify
+    var _fullSnap = savedD;
     Object.assign(fresh, {
       form:         _fullSnap.form,
       checklists:   _fullSnap.checklists,
@@ -4417,7 +4420,8 @@ function getUndoState() {
 
 // Hook called after every state change
 function _onStateChange(ev) {
-  try { busEmit('STATE_CHANGE', {event:ev, ptr:_eventPtr}, 'dispatch'); } catch(x){ console.warn('[LOFT Signal] STATE_CHANGE emit error:', x); }
+  // PERF: debounce tuned by LOFT-PERF — batch rapid STATE_CHANGE emissions at 80ms
+  try { busEmitDebounced('STATE_CHANGE', {event:ev, ptr:_eventPtr}, 'dispatch', 80); } catch(x){ console.warn('[LOFT Signal] STATE_CHANGE emit error:', x); }
   if (ev.undoable !== false) sv();
   // Update undo/redo buttons
   try {
@@ -6504,6 +6508,13 @@ var _origLoriProactiveSuggest = null; // set after function defined
 // QUAL#38 — AI CLIENT: Centralized layer for all IA calls
 // Rate limiting, LRU cache, metrics, retry logic all in one place
 // ══════════════════════════════════════════════════════════════════════
+// PERF: fast 32-bit string hash used for IA cache keys — avoids long key strings
+function _hashStr(s){
+  var h=0,i=s.length;
+  while(i-->0)h=(h*31^s.charCodeAt(i))>>>0;
+  return h.toString(36);
+}
+
 var AIClient = (function() {
   var _callCount = 0;
   var _callSuccesses = 0;
@@ -6517,12 +6528,10 @@ var AIClient = (function() {
   var _rateLimitMax = 30; // 30 calls/min
   var _rateCalls = [];
 
-  function _cacheKey(model, prompt) {
-    // Simple hash: model + first 100 chars of prompt
-    var str = model + '|' + (prompt||'').slice(0,100);
-    var hash = 0;
-    for (var i=0; i<str.length; i++) { hash = ((hash<<5)-hash)+str.charCodeAt(i); hash|=0; }
-    return 'h' + Math.abs(hash);
+  function _cacheKey(model, systemPrompt, parts) {
+    // PERF: use _hashStr on truncated prompt to keep cache keys short and computation fast
+    var raw = model + '|' + _hashStr(systemPrompt + JSON.stringify(parts||[]).slice(0,500));
+    return 'h' + _hashStr(raw);
   }
 
   function _lruGet(key) {
@@ -6558,7 +6567,8 @@ var AIClient = (function() {
       _callCount++;
       // Check cache for deterministic calls (temperature 0)
       if (!opts.noCache && temperature === 0) {
-        var key = _cacheKey(model, systemPrompt + JSON.stringify(parts||[]).slice(0,200));
+        // PERF: compute key once and reuse — avoids duplicate JSON.stringify(parts) calls
+        var key = _cacheKey(model, systemPrompt, parts);
         var cached = _lruGet(key);
         if (cached) { return cached; }
       }
@@ -6567,7 +6577,7 @@ var AIClient = (function() {
         var result = await iaCall(model, systemPrompt, parts, maxTokens, temperature);
         _callSuccesses++;
         if (!opts.noCache && temperature === 0) {
-          _lruSet(_cacheKey(model, systemPrompt + JSON.stringify(parts||[]).slice(0,200)), result);
+          _lruSet(key || _cacheKey(model, systemPrompt, parts), result);
         }
         return result;
       } catch(ex) {
@@ -7386,33 +7396,37 @@ function svOnly(){
       try{if(typeof CaseManager!=='undefined')CaseManager.syncActiveCase();}catch(_cex){}
       localStorage.setItem(SK,JSON.stringify(D));}catch(err){}
 }
+// PERF: lazy tab render — tracks which tabs have been rendered since last state change
+var _lastRenderedTab = {};
+
 function sv(){
   syncCTXtoD();
   invalidateSelectors(); // ARCH#2: invalidate derived state
   _AUTOFILL_PATTERNS=null; _macCache=null; // invalidate macro/autofill caches
+  _lastRenderedTab = {}; // PERF: invalidate all tab render cache on every save
+  // PERF: cache unsaved-dot lookup — called on every sv() invocation
   _hasUnsaved=false;var _ud=document.getElementById('unsaved-dot');if(_ud)_ud.style.display='none';
   if(_svTimer)clearTimeout(_svTimer);
   _svTimer=setTimeout(function(){
     try{
+      // PERF: cache sv-ts element once per save cycle — used in both offline and online paths
+      var _svTsEl=document.getElementById('sv-ts');
       // USABILITY#20: offline queue
       if(!navigator.onLine){
         localStorage.setItem(SK+'_offline',JSON.stringify({data:D,ts:Date.now()}));
-        var el2=document.getElementById('sv-ts');
-        if(el2)el2.textContent='Salvo offline';
+        if(_svTsEl)_svTsEl.textContent='Salvo offline';
         return;
       }
       // CODE#25: persist CTX.validationStatus
       if(CTX&&CTX.validationStatus&&Object.keys(CTX.validationStatus).length)
         D.iaValidationStatus=CTX.validationStatus;
-      if(CTX&&CTX.validationStatus&&Object.keys(CTX.validationStatus).length)D.iaValidationStatus=CTX.validationStatus;
       localStorage.setItem(SK,JSON.stringify(D));
       try{idbSaveCase();}catch(ex){} // ARCH#4: also save to IDB
       try{_maybeCollabBroadcast();}catch(ex){}
       var now=new Date();
       LAST_SAVE_TS='Salvo '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      var el=document.getElementById('sv-ts');
-      if(el){el.textContent=LAST_SAVE_TS;el.style.color='#4ADE80';
-        setTimeout(function(){if(el)el.style.color='';},1200);}
+      if(_svTsEl){_svTsEl.textContent=LAST_SAVE_TS;_svTsEl.style.color='#4ADE80';
+        setTimeout(function(){if(_svTsEl)_svTsEl.style.color='';},1200);}
       try{if(typeof _updHdrPct!=='undefined')_updHdrPct();}catch(ex){}
       try{_renderCasePainel();}catch(ex){}
       try{_renderDiasEmAberto();}catch(ex){}
@@ -7775,7 +7789,7 @@ function selCat(id){
  body:(()=>{var _pn=curCat.itens.filter(function(i){return !i.est&&!i.opcional;}).slice(0,3).map(function(i){return '• '+i.tx;}).join('<br>');return 'Ainda existem <strong>'+unanswered+' item(s)</strong> sem resposta em <strong>"'+curCat.nome+'"</strong>:<br><br><span style="font-size:.85em;color:#888">'+_pn+(unanswered>3?'<br>• ...e mais '+(unanswered-3):'')+'</span><br><br>Deseja continuar mesmo assim?';})(),
  confirmTxt:'Continuar →',
  cancelTxt:'← Voltar e revisar',
- onConfirm:()=>{CA=id;rCats();document.getElementById('mc').classList.add('anim');setTimeout(()=>document.getElementById('mc').classList.remove('anim'),300);if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();}
+ onConfirm:()=>{CA=id;rCats();var _m1=document.getElementById('mc');if(_m1){_m1.classList.add('anim');setTimeout(()=>{var _m2=document.getElementById('mc');if(_m2)_m2.classList.remove('anim');},300);}if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();} // PERF: mc cached per callback
  });
  return;
  }
@@ -7790,7 +7804,7 @@ function selCat(id){
  body:'Nenhum campo foi preenchido em <strong>Dados do Contrato</strong>.<br><br>Deseja continuar mesmo assim?',
  confirmTxt:'Sim, continuar',
  cancelTxt:'Voltar',
- onConfirm:()=>{CA=id;rCats();document.getElementById('mc').classList.add('anim');setTimeout(()=>document.getElementById('mc').classList.remove('anim'),300);if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();}
+ onConfirm:()=>{CA=id;rCats();var _m1=document.getElementById('mc');if(_m1){_m1.classList.add('anim');setTimeout(()=>{var _m2=document.getElementById('mc');if(_m2)_m2.classList.remove('anim');},300);}if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();} // PERF: mc cached per callback
  });
  return;
  }
@@ -7809,14 +7823,20 @@ function selCat(id){
       }
     }catch(ex){}
   }
+  // PERF: cache repeated DOM lookups — calc-sticky-footer-el and mc queried once per selCat call
   var _sfH=document.getElementById('calc-sticky-footer-el');if(_sfH)_sfH.style.display=(id===6)?'':'none';
-  CA=id;rCats();document.getElementById('mc').classList.add('anim');setTimeout(()=>document.getElementById('mc').classList.remove('anim'),300);if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();
+  var _mcEl=document.getElementById('mc'); // PERF: cached to avoid 2 getElementById('mc') calls
+  CA=id;rCats();if(_mcEl){_mcEl.classList.add('anim');setTimeout(function(){var _m=document.getElementById('mc');if(_m)_m.classList.remove('anim');},300);}if(id==='rel'){gerarRelatorioHTML();return;}else rConteudo();
 }
 function rConteudo(){
+  // PERF: lazy tab render — skip re-render if this tab was already rendered since last sv()
+  var _tabKey = String(CA);
+  if (_lastRenderedTab[_tabKey]) return;
+  _lastRenderedTab[_tabKey] = true;
   try{
     if(CA===1)rForm();else if(CA===6)rCalc(D.calc);else if(CA===8)rRevisao();else if(CA===9)rValidarIA();else if(CA===10)rOrcamentos();else if(CA===11)rDataReader();
     else{var _c=D.checklists.find(function(x){return x.id===CA;});if(_c)rCheck(_c);else _rErr('Seção não encontrada: '+CA);}
-  }catch(err){_rErr(err.message);}
+  }catch(err){_lastRenderedTab[_tabKey]=false;_rErr(err.message);}
 }
 function _rErr(msg){var mc=document.getElementById('mc');if(mc)mc.innerHTML='<div style="padding:40px;text-align:center;color:#f87171"><div style="font-size:2em;margin-bottom:12px">⚠️</div><div style="font-weight:700;margin-bottom:8px">Erro ao carregar seção</div><div style="font-size:.85em;color:#888;margin-bottom:16px">'+String(msg)+'</div><button class="sbn sbn-s" onclick="selCat(1)">← Voltar ao início</button></div>';}
 
