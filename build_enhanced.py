@@ -1592,7 +1592,7 @@ ENHANCED_JS = """
           // Extra pass: remove trailing commas before ] and }
           var cleaned = raw
             .replace(/,\s*([\]}])/g, '$1')         // trailing commas
-            .replace(/[\x00-\x1F\x7F]/g, ' ')      // control chars
+            .replace(/[\\x00-\\x1F\\x7F]/g, ' ')      // control chars
             .replace(/\bNaN\b/g, 'null')            // NaN → null
             .replace(/\bInfinity\b/g, 'null')       // Infinity → null
             .replace(/\bundefined\b/g, 'null');     // undefined → null
