@@ -2291,15 +2291,26 @@ details[style*="border-top"] summary { font-size: .73em !important; }
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
 <script id="loft-early-errorcatch">
 (function(){
-  var _loftErrors=[];
   window.addEventListener("error",function(ev){
-    var msg=(ev.message||"")+(ev.filename?" @ "+ev.filename:"")+(ev.lineno?" :"+ev.lineno:"");
-    _loftErrors.push(msg);
-    if(msg.toLowerCase().indexOf("regular expression")>=0||msg.toLowerCase().indexOf("syntax")>=0){
-      console.error("[LOFT-ERR] Caught:",msg);
-    }
+    var msg=ev.message||"";
+    var src=ev.filename||"";
+    var line=ev.lineno||0;
+    var col=ev.colno||0;
+    var detail="ERRO JS:\n"+msg+"\n\nArquivo: "+src+"\nLinha: "+line+", Col: "+col;
+    if(ev.error&&ev.error.stack) detail+="\n\nStack:\n"+ev.error.stack.slice(0,500);
+    // Show visible red banner
+    var b=document.createElement("div");
+    b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:99999;background:#c00;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;max-height:200px;overflow:auto;border-bottom:2px solid #800";
+    b.textContent=detail;
+    var close=document.createElement("button");
+    close.textContent="X";
+    close.style.cssText="float:right;background:#800;border:none;color:#fff;cursor:pointer;padding:2px 8px;font-size:14px";
+    close.onclick=function(){b.remove();};
+    b.insertBefore(close,b.firstChild);
+    if(document.body) document.body.appendChild(b);
+    else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(b);});
+    console.error("[LOFT-ERR]",detail);
   },true);
-  window._loftGetErrors=function(){ return _loftErrors; };
 })();
 </script>
 <style id="loft-enhancements-css">
@@ -3000,7 +3011,7 @@ body.loft-focus-mode #loft-focus-indicator { display: block; }
  <div class="fs"><div class="fst">Dados do Contrato</div>
  <div class="fg"><div class="ff"><label>Aluguel no contrato</label><div class="fm"><span>R$</span><input type="text" value="" placeholder="0,00" inputmode="decimal" oninput="D.form['aluguel']=this.value;sv();rCats();setTimeout(_showMultaAutoBtn,100)"></div></div><div class="ff"><label>Valor locatício na plataforma</label><div class="fm"><span>R$</span><input type="text" value="" placeholder="0,00" inputmode="decimal" oninput="D.form['val_plat']=this.value;sv();rCats()"></div></div><div class="ff"><label>Vencimento em contrato (dia)</label><input type="text" value="" placeholder="Ex: 5" oninput="D.form['vencimento']=this.value;sv();rCats()"></div><div class="ff"><label>Vigência do contrato (duração)</label><input type="text" value="" placeholder="Ex: 12 meses" oninput="D.form['vigencia']=this.value;sv();rCats()"></div><div class="ff"><label>Data de ativação na plataforma</label><input type="date" value="" onchange="D.form['dt_ativ']=this.value;sv();rCats()"></div><div class="ff"><label>Início do contrato</label><input type="date" value="" onchange="D.form['dt_inicio']=this.value;sv();rCats();
   try{var _dtI=new Date(this.value);var _dtC=D.form.dtChavesEmail?new Date(D.form.dtChavesEmail):null;if(_dtC&&_dtC>_dtI){var _totalDias=Math.round((_dtC-_dtI)/86400000);var _meses=Math.floor(_totalDias/30);var _dias=_totalDias%30;var _durEl=document.getElementById('contrato-duracao');if(_durEl)_durEl.textContent=_meses+' meses e '+_dias+' dias de contrato';}}catch(x){}
-  try{var _v=D.form.vigencia;var _d=new Date(this.value);if(_v){var _m=String(_v).match(/(\d+)\s*m[eê]s/i);if(_m){_d.setMonth(_d.getMonth()+parseInt(_m[1]));var _dte=_d.toISOString().slice(0,10);var _el=document.querySelector('[onchange*=\"dt_termino\"]');if(!_el){var _fEl=this.closest('.fg')||this.closest('.ff');if(_fEl){var _nb=document.getElementById('dt-termino-calc');if(!_nb){_nb=document.createElement('div');_nb.id='dt-termino-calc';_nb.style.cssText='font-size:.68em;color:#4ADE80;margin-top:2px';_fEl.appendChild(_nb);}_nb.textContent='Término previsto: '+_d.toLocaleDateString(\'pt-BR\')+\'\';}}}}}}catch(x){}"
+  try{var _v=D.form.vigencia;var _d=new Date(this.value);if(_v){var _m=String(_v).match(/(\d+)\s*m[e\u00EA]s/i);if(_m){_d.setMonth(_d.getMonth()+parseInt(_m[1]));var _dte=_d.toISOString().slice(0,10);var _el=document.querySelector('[onchange*=\"dt_termino\"]');if(!_el){var _fEl=this.closest('.fg')||this.closest('.ff');if(_fEl){var _nb=document.getElementById('dt-termino-calc');if(!_nb){_nb=document.createElement('div');_nb.id='dt-termino-calc';_nb.style.cssText='font-size:.68em;color:#4ADE80;margin-top:2px';_fEl.appendChild(_nb);}_nb.textContent='Término previsto: '+_d.toLocaleDateString(\'pt-BR\')+\'\';}}}}}}catch(x){}"
     ></div><div class="ff"><label>Assinatura do contrato e total de páginas</label><input type="text" value="" placeholder="Ex: Assinado digitalmente / 8 páginas" oninput="D.form['ass_paginas']=this.value;sv();rCats()"></div></div>
  </div>
  <div class="fs"><div class="fst">✅ Verificações do Contrato</div>

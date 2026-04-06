@@ -2573,19 +2573,30 @@ def build():
         "frame-ancestors 'none'"
         '">\n'
     )
-    # Early error capture script + CSS
+    # Early error capture script — shows a visible banner on ANY JS error
     EARLY_SCRIPT = (
         '<script id="loft-early-errorcatch">\n'
         '(function(){\n'
-        '  var _loftErrors=[];\n'
         '  window.addEventListener("error",function(ev){\n'
-        '    var msg=(ev.message||"")+(ev.filename?" @ "+ev.filename:"")+(ev.lineno?" :"+ev.lineno:"");\n'
-        '    _loftErrors.push(msg);\n'
-        '    if(msg.toLowerCase().indexOf("regular expression")>=0||msg.toLowerCase().indexOf("syntax")>=0){\n'
-        '      console.error("[LOFT-ERR] Caught:",msg);\n'
-        '    }\n'
+        '    var msg=ev.message||"";\n'
+        '    var src=ev.filename||"";\n'
+        '    var line=ev.lineno||0;\n'
+        '    var col=ev.colno||0;\n'
+        '    var detail="ERRO JS:\\n"+msg+"\\n\\nArquivo: "+src+"\\nLinha: "+line+", Col: "+col;\n'
+        '    if(ev.error&&ev.error.stack) detail+="\\n\\nStack:\\n"+ev.error.stack.slice(0,500);\n'
+        '    // Show visible red banner\n'
+        '    var b=document.createElement("div");\n'
+        '    b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:99999;background:#c00;color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;white-space:pre-wrap;max-height:200px;overflow:auto;border-bottom:2px solid #800";\n'
+        '    b.textContent=detail;\n'
+        '    var close=document.createElement("button");\n'
+        '    close.textContent="X";\n'
+        '    close.style.cssText="float:right;background:#800;border:none;color:#fff;cursor:pointer;padding:2px 8px;font-size:14px";\n'
+        '    close.onclick=function(){b.remove();};\n'
+        '    b.insertBefore(close,b.firstChild);\n'
+        '    if(document.body) document.body.appendChild(b);\n'
+        '    else document.addEventListener("DOMContentLoaded",function(){document.body.appendChild(b);});\n'
+        '    console.error("[LOFT-ERR]",detail);\n'
         '  },true);\n'
-        '  window._loftGetErrors=function(){ return _loftErrors; };\n'
         '})();\n'
         '</script>\n'
     )
@@ -2842,9 +2853,30 @@ def build():
         out.append(html[pos:])
         return ''.join(out)
 
-    print("Running comprehensive regex non-ASCII escape pass...")
+    # Also process inline event handler attributes (onclick="...", oninput="...", etc.)
+    def _process_inline_handlers(html):
+        """Escape non-ASCII chars in regex literals inside on* HTML attributes."""
+        def _fix_attr(m):
+            attr_name = m.group(1)
+            quote = m.group(2)
+            attr_val = m.group(3)
+            patched = _patch_script_block(attr_val)
+            if patched != attr_val:
+                print(f"  Escaped non-ASCII in inline {attr_name} handler")
+            return f'{attr_name}={quote}{patched}{quote}'
+
+        return _re.sub(
+            r'(on\w+)=(["\'])((?:(?!\2).)*?)\2',
+            _fix_attr,
+            html,
+            flags=_re.DOTALL
+        )
+
+    print("Running comprehensive regex non-ASCII escape pass (script blocks)...")
     content = _process_scripts(content)
-    print("Regex escape pass complete.")
+    print("Running regex escape pass on inline event handlers...")
+    content = _process_inline_handlers(content)
+    print("Regex escape passes complete.")
 
     # Recalculate </body> position after CSS insertion
     last_body = content.rfind('</body>')
