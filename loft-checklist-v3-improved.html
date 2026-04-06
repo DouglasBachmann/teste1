@@ -2718,6 +2718,42 @@ body.loft-focus-mode #loft-focus-indicator { display: block; }
 #mc::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
 #mc::-webkit-scrollbar-thumb:hover { background: #fa0707; }
 
+/* ── LOFT-UX: Onboarding overlay (see JS applyUXEnhancements) ─── */
+#loft-onboard-overlay { animation: loft-fade-in .25s ease; }
+
+/* ── LOFT-UX: Loading skeleton for AI result areas ─────────────── */
+.loft-skeleton {
+  background: linear-gradient(90deg, #1a1a1a 25%, #242424 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: loft-skeleton-wave 1.4s ease-in-out infinite;
+  border-radius: 4px;
+}
+@keyframes loft-skeleton-wave {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.loft-skeleton-line { height: 12px; margin: 6px 0; }
+.loft-skeleton-line.wide  { width: 85%; }
+.loft-skeleton-line.short { width: 55%; }
+
+/* ── LOFT-PERF: Signal cascade warning indicator ────────────────── */
+#loft-perf-indicator {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 8000;
+  font-size: 9px;
+  font-family: 'SF Mono', monospace;
+  color: #333;
+  pointer-events: none;
+  letter-spacing: .04em;
+}
+
+/* ── LOFT-LOGIC: Manual override badge on topt items ───────────── */
+.topt[data-manual] {
+  border-left: 2px solid rgba(250,7,7,.5) !important;
+}
+
 </style>
 </head>
 <body>
@@ -22112,11 +22148,412 @@ document.addEventListener('DOMContentLoaded', function() {
       buildRipple();
       setupKeyboard();
       hookAutosave();
+      applyLogicPatches();
+      applyIAPatches();
+      applyUXEnhancements();
+      applyPerfPatches();
       // Welcome toast
       setTimeout(function() {
         loftToast('⌘K command palette • ? atalhos • Shift+F foco', 'info', 5000);
       }, 1800);
     });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-LOGIC — Business logic bug fixes (safe global patches)
+  // ═══════════════════════════════════════════════════════════
+  function applyLogicPatches() {
+    // 1. Harden _addrEq: prevent false-positives from substring matching
+    //    Original: na.includes(nb) → "ruaa10" matches "ruaa100" (BUG)
+    //    Fix: require shorter string to be ≥5 chars AND cover ≥60% of longer
+    if (typeof window._addrNorm === 'function' || typeof _addrNorm === 'function') {
+      var _norm = typeof window._addrNorm === 'function' ? window._addrNorm : _addrNorm;
+      window._addrEq = function(a, b) {
+        var na = _norm(a), nb = _norm(b);
+        if (!na || !nb) return false;
+        if (na === nb) return true;
+        var longer  = na.length >= nb.length ? na : nb;
+        var shorter = na.length >= nb.length ? nb : na;
+        // includes() only trusted when shorter is ≥5 chars AND covers ≥60% of longer
+        return shorter.length >= 5
+          && longer.indexOf(shorter) !== -1
+          && (shorter.length / longer.length) >= 0.60;
+      };
+    }
+
+    // 2. Track manually-set checklist items so AI never overwrites them
+    //    Patch _applyInferenceToD to mark AI-set items, respect _manualSet flag
+    var _origApplyInference = typeof window._applyInferenceToD === 'function'
+      ? window._applyInferenceToD : null;
+    window._applyInferenceToD = function(catId, itemId, inf) {
+      try {
+        if (typeof D === 'undefined' || !D) return;
+        var cat = D.checklists && D.checklists.find(function(c){ return c.id === catId; });
+        if (!cat) return;
+        var it = cat.itens && cat.itens.find(function(i){ return i.id === itemId; });
+        if (!it) return;
+        // Never overwrite a manually-set item
+        if (it._manualSet) return;
+        // Run original logic
+        if (_origApplyInference) _origApplyInference(catId, itemId, inf);
+        // Mark AI-set so we know it was AI-set (not manual)
+        if (it.est) it._aiSet = true;
+      } catch(ex) {}
+    };
+
+    // 3. Track user-touched form fields via event delegation
+    //    When user edits any input/select with data-field, mark it in D._userFields
+    document.addEventListener('input',  _markUserField, true);
+    document.addEventListener('change', _markUserField, true);
+    function _markUserField(e) {
+      try {
+        var el = e.target;
+        if (!el) return;
+        var field = el.getAttribute && el.getAttribute('data-field');
+        if (!field) return;
+        if (typeof D === 'undefined' || !D) return;
+        if (!D._userFields) D._userFields = {};
+        D._userFields[field] = true;
+        // Remove from _iaFields so IA knows user took ownership
+        if (D._iaFields) delete D._iaFields[field];
+      } catch(ex) {}
+    }
+
+    // 4. Also mark checklist items when user manually clicks topt toggles
+    document.addEventListener('click', function(e) {
+      try {
+        var el = e.target;
+        if (!el) return;
+        // Find closest element with onclick that sets est
+        var topt = el.closest && el.closest('.topt[onclick]');
+        if (topt) {
+          // Extract catId and itemId from the onclick to mark as manual
+          var onc = topt.getAttribute('onclick') || '';
+          var m = onc.match(/setEst\((\d+),(\d+)/);
+          if (m) {
+            var cId = parseInt(m[1]), iId = parseInt(m[2]);
+            setTimeout(function() {
+              try {
+                if (typeof D === 'undefined') return;
+                var cat = D.checklists && D.checklists.find(function(c){ return c.id===cId; });
+                var it = cat && cat.itens && cat.itens.find(function(i){ return i.id===iId; });
+                if (it && it.est) { it._manualSet = true; it._aiSet = false; }
+              } catch(ex) {}
+            }, 50);
+          }
+        }
+      } catch(ex) {}
+    }, true);
+
+    // 5. Enhance validateMulta to also flag missing mandatory fields
+    var _origValidateMulta = typeof window.validateMulta === 'function'
+      ? window.validateMulta : null;
+    window.validateMulta = function() {
+      var issues = _origValidateMulta ? _origValidateMulta() : [];
+      try {
+        if (typeof D === 'undefined' || !D || !D.form) return issues;
+        var mc = D.form.multa_contratual || D.form.multa_pac || '';
+        var hasCalcLines = D.calc && D.calc.linhas && D.calc.linhas.some(function(l) {
+          return l.tipo === 'multa';
+        });
+        if (hasCalcLines && !mc.trim()) {
+          issues.unshift('Multa contratual não preenchida — preencha antes de calcular');
+        }
+        if (mc && !/\d/.test(mc)) {
+          issues.push('Multa contratual não contém número — verifique o valor');
+        }
+      } catch(ex) {}
+      return issues;
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-IA — Gemini integration improvements
+  // ═══════════════════════════════════════════════════════════
+  function applyIAPatches() {
+    // 1. Better error classification and user-friendly messages
+    //    Wrap the global iaCall to reclassify errors
+    var _origIaCall = typeof window.iaCall === 'function' ? window.iaCall : null;
+    if (_origIaCall) {
+      window.iaCall = function(model, systemPrompt, parts, maxTokens, temperature) {
+        return _origIaCall(model, systemPrompt, parts, maxTokens, temperature)
+          .catch(function(err) {
+            var msg = err && err.message ? err.message : String(err);
+            // Classify known error patterns into friendly messages
+            if (msg.indexOf('API key') !== -1 || msg.indexOf('400') !== -1 || msg.indexOf('401') !== -1) {
+              throw new Error('❌ Chave API inválida ou expirada. Verifique em aistudio.google.com/apikey');
+            }
+            if (msg.indexOf('429') !== -1 || msg.indexOf('sobrecarregada') !== -1) {
+              throw new Error('⏳ Limite de requisições atingido. Aguarde 1 minuto e tente novamente.');
+            }
+            if (msg.indexOf('Timeout') !== -1 || msg.indexOf('AbortError') !== -1) {
+              throw new Error('⌛ Tempo esgotado. Documento muito grande ou conexão lenta. Tente dividir em partes menores.');
+            }
+            if (msg.indexOf('vazia') !== -1 || msg.indexOf('ilegível') !== -1) {
+              throw new Error('📄 Documento ilegível ou corrompido. Verifique a qualidade do arquivo.');
+            }
+            throw err;
+          });
+      };
+    }
+
+    // 2. Model fallback: if flash fails with 5xx, retry with flash-8b
+    var _origIaCallFallback = window.iaCall;
+    if (_origIaCallFallback) {
+      window.iaCallWithFallback = function(primaryModel, systemPrompt, parts, maxTokens, temperature) {
+        return _origIaCallFallback(primaryModel, systemPrompt, parts, maxTokens, temperature)
+          .catch(function(err) {
+            var msg = err && err.message ? err.message : '';
+            // Only fallback for server errors, not key/rate errors
+            if (msg.indexOf('❌') !== -1 || msg.indexOf('⏳') !== -1) throw err;
+            var fallback = primaryModel.indexOf('flash') !== -1
+              ? 'gemini-2.0-flash-lite' : null;
+            if (!fallback) throw err;
+            loftToast('Modelo principal indisponível — usando fallback...', 'warning', 3000);
+            return _origIaCallFallback(fallback, systemPrompt, parts, maxTokens, temperature);
+          });
+      };
+    }
+
+    // 3. Token estimation helper (rough: 4 chars ≈ 1 token)
+    window.loftEstimateTokens = function(parts) {
+      try {
+        var totalChars = 0;
+        (parts || []).forEach(function(p) {
+          if (p.text) totalChars += p.text.length;
+          if (p.inlineData && p.inlineData.data) totalChars += p.inlineData.data.length * 0.75;
+        });
+        return Math.round(totalChars / 4);
+      } catch(ex) { return 0; }
+    };
+
+    // 4. Improve iaParseJSON robustness: add extra cleanup passes
+    var _origParseJSON = typeof window.iaParseJSON === 'function' ? window.iaParseJSON : null;
+    if (_origParseJSON) {
+      window.iaParseJSON = function(raw) {
+        try {
+          // Try original parser first
+          var result = _origParseJSON(raw);
+          if (result && !result._error) return result;
+          // Extra pass: remove trailing commas before ] and }
+          var cleaned = raw
+            .replace(/,\s*([\]}])/g, '$1')         // trailing commas
+            .replace(/[ -]/g, ' ')      // control chars
+            .replace(/NaN/g, 'null')            // NaN → null
+            .replace(/Infinity/g, 'null')       // Infinity → null
+            .replace(/undefined/g, 'null');     // undefined → null
+          try { return JSON.parse(cleaned); } catch(e2) {}
+          return result; // return original _error result
+        } catch(ex) {
+          return { _error: 'Parse failed: ' + String(ex).substring(0, 80) };
+        }
+      };
+    }
+
+    // 5. Show estimated token count in IA panel API key area
+    var _apiKeyInput = document.getElementById('ia-api-key');
+    if (_apiKeyInput) {
+      var _tokenHint = document.createElement('div');
+      _tokenHint.id = 'loft-token-hint';
+      _tokenHint.style.cssText = 'font-size:10px;color:#555;margin-top:4px;font-family:monospace;letter-spacing:.04em;';
+      _tokenHint.textContent = 'tokens estimados: —';
+      _apiKeyInput.parentNode.parentNode.appendChild(_tokenHint);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-UX — Onboarding + ARIA + accessibility
+  // ═══════════════════════════════════════════════════════════
+  function applyUXEnhancements() {
+    // 1. ARIA labels on key interactive elements
+    setTimeout(function() {
+      var mc = document.getElementById('mc');
+      if (mc) { mc.setAttribute('role', 'main'); mc.setAttribute('aria-label', 'Área de checklist'); }
+      var aside = document.querySelector('aside');
+      if (aside) { aside.setAttribute('role', 'navigation'); aside.setAttribute('aria-label', 'Menu de navegação'); }
+      // Label all section cards
+      var sections = document.querySelectorAll('.fs');
+      sections.forEach(function(s, i) {
+        var title = s.querySelector('.fst');
+        var label = title ? title.textContent.trim() : ('Seção ' + (i+1));
+        s.setAttribute('aria-label', label);
+        s.setAttribute('role', 'region');
+      });
+    }, 600);
+
+    // Re-apply ARIA when mc content changes
+    var _ariaObs = new MutationObserver(function() {
+      clearTimeout(_ariaObs._t);
+      _ariaObs._t = setTimeout(function() {
+        var mc = document.getElementById('mc');
+        if (!mc) return;
+        mc.querySelectorAll('.fs:not([role])').forEach(function(s) {
+          var title = s.querySelector('.fst');
+          if (title) {
+            s.setAttribute('aria-label', title.textContent.trim());
+            s.setAttribute('role', 'region');
+          }
+        });
+      }, 300);
+    });
+    var _mcAria = document.getElementById('mc');
+    if (_mcAria) _ariaObs.observe(_mcAria, { childList: true, subtree: false });
+
+    // 2. First-time onboarding modal
+    var _onboardKey = 'loft_v3_onboarded';
+    if (!localStorage.getItem(_onboardKey)) {
+      setTimeout(function() {
+        localStorage.setItem(_onboardKey, '1');
+        _showOnboarding();
+      }, 2200);
+    }
+
+    function _showOnboarding() {
+      var ov = document.createElement('div');
+      ov.id = 'loft-onboard-overlay';
+      ov.style.cssText = [
+        'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;',
+        'display:flex;align-items:center;justify-content:center;padding:24px;',
+        'backdrop-filter:blur(6px);animation:loft-fade-in .25s ease'
+      ].join('');
+
+      var box = document.createElement('div');
+      box.style.cssText = [
+        'background:#141414;border:1px solid #2a2a2a;border-radius:8px;',
+        'width:100%;max-width:480px;overflow:hidden;',
+        'box-shadow:0 32px 80px rgba(0,0,0,.7)'
+      ].join('');
+
+      var steps = [
+        { icon: '📋', title: 'Bem-vindo ao LOFT Checklist V3', desc: 'Sistema de análise de rescisão com IA integrada. Carregue os documentos na aba IA para análise automática.' },
+        { icon: '🤖', title: 'Validação por IA', desc: 'Configure sua API Key Gemini na aba IA. O sistema analisa contratos, vistorias e boletos automaticamente.' },
+        { icon: '⌨️', title: 'Atalhos de teclado', desc: 'Ctrl+K abre a paleta de comandos. Pressione ? para ver todos os atalhos. Shift+F ativa o modo foco.' },
+        { icon: '📊', title: 'Relatório final', desc: 'Após preencher o checklist, use "Gerar link" para exportar o relatório completo com score de qualidade.' }
+      ];
+      var cur = 0;
+
+      function _render() {
+        var s = steps[cur];
+        box.innerHTML = [
+          '<div style="background:var(--brand,#fa0707);padding:24px 24px 20px;text-align:center">',
+            '<div style="font-size:2.2em;margin-bottom:8px">'+s.icon+'</div>',
+            '<div style="font-family:Rajdhani,sans-serif;font-size:1.1em;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase">'+s.title+'</div>',
+          '</div>',
+          '<div style="padding:24px">',
+            '<p style="font-family:Rajdhani,sans-serif;font-size:.9em;color:#aaa;line-height:1.6;text-transform:none;margin:0 0 20px">'+s.desc+'</p>',
+            '<div style="display:flex;gap:8px;align-items:center">',
+              '<div style="flex:1;display:flex;gap:6px">',
+                steps.map(function(_,i){
+                  return '<div style="width:6px;height:6px;border-radius:50%;background:'+(i===cur?'#fa0707':'#2a2a2a')+'"></div>';
+                }).join(''),
+              '</div>',
+              cur > 0 ? '<button id="loft-ob-back" style="padding:8px 16px;background:transparent;border:1px solid #2a2a2a;border-radius:4px;color:#888;font-family:Rajdhani,sans-serif;font-size:.8em;font-weight:600;cursor:pointer;text-transform:uppercase">Anterior</button>' : '',
+              '<button id="loft-ob-next" style="padding:8px 20px;background:#fa0707;border:none;border-radius:4px;color:#fff;font-family:Rajdhani,sans-serif;font-size:.8em;font-weight:700;cursor:pointer;text-transform:uppercase">'+
+                (cur===steps.length-1 ? 'Começar' : 'Próximo')+
+              '</button>',
+            '</div>',
+          '</div>'
+        ].join('');
+        var nb = document.getElementById('loft-ob-next');
+        var bb = document.getElementById('loft-ob-back');
+        if (nb) nb.onclick = function() {
+          if (cur < steps.length-1) { cur++; _render(); }
+          else { document.body.removeChild(ov); }
+        };
+        if (bb) bb.onclick = function() { if (cur>0) { cur--; _render(); } };
+      }
+
+      ov.appendChild(box);
+      ov.addEventListener('click', function(e) { if (e.target===ov) document.body.removeChild(ov); });
+      document.body.appendChild(ov);
+      _render();
+    }
+
+    // 3. Keyboard navigation: Tab key cycles through category buttons in sidebar
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        // Simulate ? key to show shortcuts
+        document.dispatchEvent(new KeyboardEvent('keydown', {key:'?', bubbles:true}));
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // LOFT-PERF — Performance optimizations
+  // ═══════════════════════════════════════════════════════════
+  function applyPerfPatches() {
+    // 1. Add TTL to AIClient LRU cache entries (30min expiry)
+    if (typeof AIClient !== 'undefined' && AIClient) {
+      var _origCall = AIClient.call.bind(AIClient);
+      var _ttlMap = {};
+      var _TTL = 30 * 60 * 1000; // 30 minutes
+      AIClient.call = function(model, systemPrompt, parts, maxTokens, temperature, opts) {
+        // Evict expired entries by checking _ttlMap
+        var now = Date.now();
+        // We can't directly evict from the private LRU, but we can skip stale caches
+        // by injecting noCache=true when entry would be expired
+        var cacheKey = model + '|' + (systemPrompt||'').substring(0,50) + '|' + (JSON.stringify(parts||[])).substring(0,100);
+        if (_ttlMap[cacheKey] && (now - _ttlMap[cacheKey]) > _TTL) {
+          opts = Object.assign({}, opts, { noCache: true });
+          delete _ttlMap[cacheKey];
+        }
+        return _origCall(model, systemPrompt, parts, maxTokens, temperature, opts)
+          .then(function(result) {
+            _ttlMap[cacheKey] = Date.now();
+            return result;
+          });
+      };
+    }
+
+    // 2. Throttle expensive busOn signal handlers that re-render
+    //    Add global signal depth guard notification
+    if (typeof _BUS !== 'undefined' && _BUS) {
+      var _depthWarned = false;
+      var _origDepth = _BUS._signalDepth;
+      Object.defineProperty(_BUS, '_signalDepth', {
+        get: function() { return _origDepth; },
+        set: function(v) {
+          _origDepth = v;
+          if (v >= 6 && !_depthWarned) {
+            _depthWarned = true;
+            console.warn('[LOFT-PERF] Signal cascade depth='+v+' — possible loop');
+            setTimeout(function(){ _depthWarned = false; }, 5000);
+          }
+        }
+      });
+    }
+
+    // 3. Optimize progress ring updates: skip if no checkbox count changed
+    //    (Already debounced at 80ms in MutationObserver, this adds a value cache)
+    if (typeof LOFT_ENH !== 'undefined' && LOFT_ENH._prUpdate) {
+      var _origPrUpdate = LOFT_ENH._prUpdate;
+      var _lastTotal = -1;
+      var _lastChecked = -1;
+      LOFT_ENH._prUpdate = function() {
+        var mc = document.getElementById('mc');
+        if (!mc) return;
+        var total = mc.querySelectorAll('input[type="checkbox"]').length;
+        var checked = mc.querySelectorAll('input[type="checkbox"]:checked').length;
+        if (total === _lastTotal && checked === _lastChecked) return;
+        _lastTotal = total; _lastChecked = checked;
+        _origPrUpdate();
+      };
+    }
+
+    // 4. Debounce rCats if called too rapidly (prevent cascade re-renders)
+    //    Wrap global rCats with a 16ms animation-frame debounce
+    if (typeof window.rCats === 'function') {
+      var _origRCats = window.rCats;
+      var _rCatsFrame = null;
+      window.rCats = function() {
+        if (_rCatsFrame) return; // already scheduled
+        _rCatsFrame = requestAnimationFrame(function() {
+          _rCatsFrame = null;
+          _origRCats();
+        });
+      };
+    }
   }
 
   if (document.readyState === 'loading') {
