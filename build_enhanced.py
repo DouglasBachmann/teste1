@@ -2539,8 +2539,9 @@ ENHANCED_JS = """
 """
 
 def build():
-    src = 'loft-checklist-v3.html'
-    dst = 'loft-checklist-v3-improved.html'
+    src = 'loft-checklist-v3-original.html'   # immutable source
+    dst = 'loft-checklist-v3.html'             # overwrites file user opens
+    dst_bak = 'loft-checklist-v3-improved.html'  # keep copy with new name too
 
     with open(src, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -2575,6 +2576,34 @@ def build():
     css_block = '\n' + CSP + '<style id="loft-enhancements-css">\n' + ENHANCED_CSS + '\n</style>\n'
     content = content[:head_pos] + css_block + content[head_pos:]
 
+    # ── Source-level patches on original JS ──────────────────────────
+    # Fix Unicode char-class ranges that newer Chrome V8 rejects.
+    # Replace literal accented chars in regex char classes with \uXXXX escapes.
+    content = content.replace(
+        '/(?:locat\\u00e1rio|inquilino)[:\\\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\\\s]{3,40})/i',
+        '/(?:locat\\u00e1rio|inquilino)[:\\\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\\\s]{3,40})/i'
+    )
+    # The actual string in the source file uses literal chars — replace them
+    content = content.replace(
+        '[A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA',
+        '[A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA'
+    )
+    # Direct replacement of the literal regex pattern in original source
+    old_regex = '/(?:locat\u00e1rio|inquilino)[:\\s]+([A-Z\u00C0-\u00DA][a-zA-Z\u00C0-\u00FA\\s]{3,40})/i'
+    new_regex = '/(?:locat\\u00e1rio|inquilino)[:\\s]+([A-Z\\u00C0-\\u00DA][a-zA-Z\\u00C0-\\u00FA\\s]{3,40})/i'
+    if old_regex in content:
+        content = content.replace(old_regex, new_regex)
+        print("Patched: locatario regex (Unicode escapes)")
+    # Fallback: replace the char class directly using bytes
+    import re as _re
+    def _fix_accented_ranges(m):
+        s = m.group(0)
+        # Replace literal À-Ú with \u00C0-\u00DA
+        s = s.replace('\u00C0-\u00DA', '\\u00C0-\\u00DA')
+        s = s.replace('\u00C0-\u00FA', '\\u00C0-\\u00FA')
+        return s
+    content = _re.sub(r'/\[(?:[^\]\n]|\\.)*\]/[gimsuy]*', _fix_accented_ranges, content)
+
     # Recalculate </body> position after CSS insertion
     last_body = content.rfind('</body>')
 
@@ -2584,8 +2613,11 @@ def build():
 
     with open(dst, 'w', encoding='utf-8') as f:
         f.write(content)
+    with open(dst_bak, 'w', encoding='utf-8') as f:
+        f.write(content)
 
     print(f"Written: {dst} ({len(content):,} chars)")
+    print(f"Written: {dst_bak} ({len(content):,} chars)")
     print(f"CSS block: {len(css_block):,} chars")
     print(f"JS block: {len(js_block):,} chars")
 
