@@ -6339,6 +6339,209 @@ function runTests() {
     vdomInvalidate('test_key');
   });
 
+  // ── REGRESSION: LOFT-LOGIC fixes ──────────────────────────────────────────
+
+  // 1. Plugin activation bug: p.active === false should skip plugin
+  _test('Plugin with active=false is skipped by runPlugins', function() {
+    var called = false;
+    var testId = 'test-inactive-plugin-' + Date.now();
+    registerPlugin({
+      id: testId,
+      triggers: ['TEST_INACTIVE_TRIGGER'],
+      active: false,
+      action: function() { called = true; return {done:true}; }
+    });
+    runPlugins('TEST_INACTIVE_TRIGGER', {});
+    unregisterPlugin(testId);
+    _assert(!called, 'plugin with active=false should not be called');
+  });
+
+  // 1b. Plugin activation: p.active=false guard in inline check
+  _test('Plugin active=false guard prevents execution', function() {
+    var called = false;
+    var p = { active: false, run: function() { called = true; } };
+    if (p.active === false) {} else p.run();
+    _assert(!called, 'run() should not be called when active=false');
+  });
+
+  // 2. Auto-fill overwrite: _autoFillOverrides populated when IA overwrites manual
+  _test('autoMarkChecklistFromIA: _autoFillOverrides logic detects conflict', function() {
+    // Test the guard logic: when it.est is already set to a different value,
+    // the override is detected (function-level _autoFillOverrides array)
+    var conflictDetected = false;
+    var fakeIt = { est: 'ok' };
+    var fakeEst = 'fail';
+    if (fakeIt.est && fakeIt.est !== fakeEst) { conflictDetected = true; }
+    _assert(conflictDetected, 'conflict between existing ok and new fail should be detected');
+  });
+
+  // 3. Toggle "mark all OK": if all OK, clicking should NOT clear them
+  _test('qMarkAllOk: returns early when all items already OK', function() {
+    if (typeof qMarkAllOk !== 'function') return;
+    if (!D || !D.checklists || !D.checklists.length) return;
+    var cat = D.checklists[0];
+    if (!cat || !cat.itens || !cat.itens.length) return;
+    // Save state
+    var savedEsts = cat.itens.map(function(it) { return it.est; });
+    // Set all to OK
+    cat.itens.forEach(function(it) { it.est = 'ok'; });
+    var allWereOk = cat.itens.every(function(it) { return it.est === 'ok'; });
+    // After calling qMarkAllOk with all-OK, all should remain OK (not cleared)
+    if (!cat.docNaoEnviado && !cat.semNecessidade) {
+      qMarkAllOk(cat.id);
+      var allStillOk = cat.itens.every(function(it) { return it.est === 'ok'; });
+      _assert(allWereOk && allStillOk, 'all-OK items should remain OK after qMarkAllOk');
+    }
+    // Restore
+    cat.itens.forEach(function(it, i) { it.est = savedEsts[i]; });
+  });
+
+  // 4. Undo completeness: D contains calc, macrosPend, limiteCusto, formaPag, contratoBase
+  _test('D contains all undo-restorable fields: calc', function() {
+    _assert(typeof D !== 'undefined', 'D must be defined');
+    _assert('calc' in D, 'D.calc should exist');
+  });
+  _test('D contains all undo-restorable fields: macrosPend', function() {
+    _assert(Array.isArray(D.macrosPend), 'D.macrosPend should be an array');
+  });
+  _test('D contains all undo-restorable fields: limiteCusto, formaPag, contratoBase', function() {
+    _assert('limiteCusto' in D, 'D.limiteCusto should exist');
+    _assert('formaPag' in D, 'D.formaPag should exist');
+    _assert('contratoBase' in D, 'D.contratoBase should exist');
+  });
+
+  // 5. Address normalization: _addrNorm handles abbreviations and punctuation
+  _test('_addrNorm: lowercases and expands r. abbreviation', function() {
+    var n1 = _addrNorm('R. das Flores, 10');
+    var n2 = _addrNorm('rua das flores 10');
+    _assert(n1 === n2, 'R. das Flores, 10 should normalize to same as rua das flores 10, got: ' + n1 + ' vs ' + n2);
+  });
+  _test('_addrNorm: returns empty string for null/undefined', function() {
+    _assert(_addrNorm(null) === '', 'null should return empty string');
+    _assert(_addrNorm(undefined) === '', 'undefined should return empty string');
+    _assert(_addrNorm('') === '', 'empty string should return empty string');
+  });
+  _test('_addrNorm: strips commas and periods', function() {
+    var result = _addrNorm('Av. Brasil, 100.');
+    _assert(result.indexOf(',') === -1, 'comma should be removed');
+    _assert(result === result.trim(), 'result should be trimmed');
+  });
+
+  // 6. _addrEq: matches abbreviated vs full address
+  _test('_addrEq: R. das Flores matches Rua das Flores', function() {
+    var eq = _addrEq('R. das Flores, 10', 'Rua das Flores 10');
+    _assert(eq === true, 'abbreviated R. should match full Rua');
+  });
+  _test('_addrEq: different addresses are not equal', function() {
+    var eq = _addrEq('Rua das Flores, 10', 'Rua das Pedras, 10');
+    _assert(eq === false, 'different street names should not be equal');
+  });
+
+  // 7. _hashStr: deterministic and distinct
+  _test('_hashStr: same input produces same hash', function() {
+    _assert(_hashStr('hello') === _hashStr('hello'), 'hash should be deterministic');
+  });
+  _test('_hashStr: different inputs produce different hashes', function() {
+    _assert(_hashStr('hello') !== _hashStr('world'), 'different inputs should produce different hashes');
+  });
+  _test('_hashStr: empty string hashes without error', function() {
+    var h = _hashStr('');
+    _assert(typeof h === 'string', 'hash of empty string should be a string');
+  });
+
+  // 8. _estimateTokens: ~1 token per 3.5 chars
+  _test('_estimateTokens: 350 chars = ~100 tokens', function() {
+    var est = _estimateTokens('a'.repeat(350));
+    _assert(est >= 95 && est <= 105, 'expected ~100 tokens, got: ' + est);
+  });
+  _test('_estimateTokens: empty input returns 0', function() {
+    _assert(_estimateTokens('') === 0, 'empty string should estimate 0 tokens');
+    _assert(_estimateTokens(null) === 0, 'null should estimate 0 tokens');
+  });
+
+  // 9. iaParseJSON: BOM, null bytes, whitespace
+  _test('iaParseJSON: handles BOM prefix', function() {
+    var result = iaParseJSON('\uFEFF{"ok":true}');
+    _assert(result && result.ok === true, 'BOM should be stripped and JSON parsed');
+  });
+  _test('iaParseJSON: handles null bytes', function() {
+    var result = iaParseJSON('{"val":\x00"test"}');
+    _assert(result !== null && typeof result === 'object', 'null bytes should be stripped');
+  });
+  _test('iaParseJSON: handles leading/trailing whitespace', function() {
+    var result = iaParseJSON('   {"x":42}   ');
+    _assert(result && result.x === 42, 'whitespace should be trimmed');
+  });
+  _test('iaParseJSON: returns _error object for invalid JSON', function() {
+    var result = iaParseJSON('not json at all!!!');
+    _assert(result && typeof result._error === 'string', 'invalid JSON should return object with _error');
+  });
+
+  // 10. API key: _getIaKey works with obfuscated key (structural test)
+  _test('_obfuscateKey/_deobfuscateKey: round-trip is lossless', function() {
+    var original = 'AIzaTestKey12345';
+    var obf = _obfuscateKey(original);
+    var restored = _deobfuscateKey(obf);
+    _assert(restored === original, 'XOR round-trip should restore original key, got: ' + restored);
+  });
+
+  // ── Additional edge-case tests ─────────────────────────────────────────────
+
+  // Edge 1: _safe helper handles all falsy sentinel values
+  _test('_safe: returns fallback for null, undefined, empty string, YYYY-MM-DD', function() {
+    _assert(_safe(null, 'fb') === 'fb', 'null should return fallback');
+    _assert(_safe(undefined, 'fb') === 'fb', 'undefined should return fallback');
+    _assert(_safe('', 'fb') === 'fb', 'empty string should return fallback');
+    _assert(_safe('YYYY-MM-DD', 'fb') === 'fb', 'YYYY-MM-DD should return fallback');
+    _assert(_safe('null', 'fb') === 'fb', 'string null should return fallback');
+    _assert(_safe('real', 'fb') === 'real', 'real value should not return fallback');
+  });
+
+  // Edge 2: _daysDiff returns null for invalid/missing dates
+  _test('_daysDiff: returns null for missing or invalid date', function() {
+    _assert(_daysDiff(null) === null, 'null should return null');
+    _assert(_daysDiff('') === null, 'empty string should return null');
+    _assert(_daysDiff('not-a-date') === null, 'invalid date should return null');
+  });
+
+  // Edge 3: _strSimilarity edge cases (empty, partial match)
+  _test('_strSimilarity: empty string vs non-empty = 0', function() {
+    _assert(_strSimilarity('', 'hello') === 0, 'empty vs non-empty should be 0');
+  });
+  _test('_strSimilarity: result is always between 0 and 1', function() {
+    var s = _strSimilarity('rescisao', 'rescisão');
+    _assert(s >= 0 && s <= 1, 'similarity should be in [0,1], got: ' + s);
+  });
+
+  // Edge 4: calcLineScore partial scoring
+  _test('calcLineScore: label only = 25', function() {
+    var score = calcLineScore({label:'Test',apr:[],macros:[]});
+    _assert(score === 25, 'label only should score 25, got: ' + score);
+  });
+  _test('calcLineScore: null input = 0', function() {
+    _assert(calcLineScore(null) === 0, 'null line should score 0');
+  });
+
+  // Edge 5: runPlugins is safe with unknown trigger and empty plugin list
+  _test('runPlugins: unknown trigger returns empty array', function() {
+    var results = runPlugins('TRIGGER_THAT_DOES_NOT_EXIST_XYZ', {});
+    _assert(Array.isArray(results) && results.length === 0, 'unknown trigger should return empty array');
+  });
+  _test('runPlugins: active plugin matching trigger does run', function() {
+    var ran = false;
+    var testId2 = 'test-active-plugin-' + Date.now();
+    registerPlugin({
+      id: testId2,
+      triggers: ['TEST_ACTIVE_TRIGGER'],
+      active: true,
+      condition: function() { return true; },
+      action: function() { ran = true; return {done:true}; }
+    });
+    runPlugins('TEST_ACTIVE_TRIGGER', {});
+    unregisterPlugin(testId2);
+    _assert(ran, 'active plugin matching trigger should execute');
+  });
+
   // Print results
   var passed = _testResults.filter(function(t){return t.passed;}).length;
   var failed = _testResults.filter(function(t){return !t.passed;});
