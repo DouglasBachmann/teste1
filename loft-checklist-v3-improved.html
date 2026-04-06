@@ -2920,6 +2920,28 @@ body.loft-focus-mode #loft-focus-indicator { display: block; }
   display: none !important;
 }
 
+/* ── LOFT-IA-LAYOUT: Document accordions on top, controls at bottom ─
+   .ia-panel becomes a flex column; CSS order controls visual position.
+   Accordions (id="ia-acc-*") get order:3, everything else gets order:9.
+   .phd header keeps order:1, so it stays at very top.
+   ──────────────────────────────────────────────────────────────────── */
+#mc .ia-panel {
+  display: flex !important;
+  flex-direction: column !important;
+}
+/* Default: all direct children go to bottom section (order 9) */
+#mc .ia-panel > * {
+  order: 9;
+}
+/* Page header stays at top */
+#mc .ia-panel > .phd {
+  order: 1;
+}
+/* Document accordions appear first (middle section, order 3) */
+#mc .ia-panel > [id^="ia-acc-"] {
+  order: 3;
+}
+
 </style>
 </head>
 <body>
@@ -22584,62 +22606,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })();
 
-    // UX-IA-LAYOUT: Reorder IA tab — document accordions appear FIRST (top),
-    //   everything else (API Key, KB editor, batch buttons) goes to bottom.
-    //   Approach: wrap rValidarIA so we run AFTER every render.
-    (function() {
-      function _reorderIATab() {
-        var panel = document.querySelector('#mc .ia-panel');
-        if (!panel) return;
-
-        // Direct children snapshot
-        var kids = Array.prototype.slice.call(panel.children);
-        if (kids.length < 3) return;
-
-        // Classify each direct child into three buckets:
-        //   "top"    = #ia-progress-bar  |  .phd header
-        //   "mid"    = document accordions: id starts with "ia-acc-"
-        //   "bottom" = everything else (API Key, KB, batch buttons, etc.)
-        var topEls = [], midEls = [], botEls = [];
-
-        kids.forEach(function(el) {
-          if (!el) return;
-          // TOP: progress bar
-          if (el.id === 'ia-progress-bar') { topEls.push(el); return; }
-          // TOP: page header
-          if (el.classList && el.classList.contains('phd')) { topEls.push(el); return; }
-          // MID: individual document accordions (id="ia-acc-contrato", etc.)
-          if (el.id && el.id.indexOf('ia-acc-') === 0) { midEls.push(el); return; }
-          // BOTTOM: everything else (API Key, KB, batch buttons, running-progress, reports)
-          botEls.push(el);
-        });
-
-        // Only reorder if there are document accordions to show at top
-        if (midEls.length === 0) return;
-
-        // Re-insert: top → accordions → bottom controls
-        var frag = document.createDocumentFragment();
-        topEls.forEach(function(el) { frag.appendChild(el); });
-        midEls.forEach(function(el) { frag.appendChild(el); });
-        botEls.forEach(function(el) { frag.appendChild(el); });
-
-        while (panel.firstChild) panel.removeChild(panel.firstChild);
-        panel.appendChild(frag);
-      }
-
-      // Wrap rValidarIA to run after every IA tab render
-      setTimeout(function() {
-        var _origRValidarIA = typeof window.rValidarIA === 'function' ? window.rValidarIA : null;
-        if (!_origRValidarIA) return;
-        window.rValidarIA = function() {
-          _origRValidarIA.apply(this, arguments);
-          // Run after DOM settles
-          requestAnimationFrame(function() { _reorderIATab(); });
-        };
-        // Run now if already on IA tab
-        if (document.querySelector('#mc .ia-panel')) _reorderIATab();
-      }, 500);
-    })();
+    // UX-IA-LAYOUT: ordering is handled entirely by CSS (flex order).
+    // See ENHANCED_CSS: #mc .ia-panel > [id^="ia-acc-"] { order: 3; }
+    //                   #mc .ia-panel > * { order: 9; }
+    //                   #mc .ia-panel > .phd { order: 1; }
+    // No JS manipulation needed — CSS applies instantly on every render.
   }
 
   // ═══════════════════════════════════════════════════════════
