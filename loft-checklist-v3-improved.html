@@ -3003,7 +3003,7 @@ function busEmitDebounced(sig,payload,src,delayMs){
   if(_sigDebounce[key]) clearTimeout(_sigDebounce[key]);
   _sigDebounce[key]=setTimeout(function(){
     delete _sigDebounce[key];
-    try{busEmit(sig,payload,src);}catch(ex){}
+    try{busEmit(sig,payload,src);}catch(ex){ console.warn('[LOFT Signal] busEmitDebounced error for signal "'+sig+'":', ex); }
   },delayMs||80);
 }
 
@@ -3076,7 +3076,18 @@ var CTX = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function _addrNorm(a){ return a?String(a).toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,35):''; }
+function _addrNorm(a){
+  if(!a) return '';
+  return String(a)
+    .toLowerCase()
+    .replace(/\br\.\s*/g,'rua ')
+    .replace(/\bav\.\s*/g,'avenida ')
+    .replace(/\bn\.\s*/g,'')
+    .replace(/[,.]/g,'')
+    .replace(/\s+/g,' ')
+    .trim()
+    .substring(0,80);
+}
 function _addrEq(a,b){ var na=_addrNorm(a),nb=_addrNorm(b); return na&&nb&&(na===nb||na.includes(nb)||nb.includes(na)); }
 function _daysDiff(iso){ if(!iso)return null; var d=new Date(iso); return isNaN(d)?null:Math.floor((Date.now()-d.getTime())/86400000); }
 function _safe(v,fb){ return(v===null||v===undefined||v===''||v==='YYYY-MM-DD'||v==='null')?fb:v; }
@@ -3234,13 +3245,19 @@ function autoMarkChecklistFromIA(extractedData, docKey){
   if(!extractedData||extractedData._error) return;
   var marked=0;
   var data=extractedData;
+  var _autoFillOverrides=[];
 
   // Helper
   function mark(catId,itemId,est){
     var cat=(D.checklists||[]).find(function(c){return c.id===catId;});
     if(!cat||cat.docNaoEnviado||cat.semNecessidade) return;
     var it=(cat.itens||[]).find(function(i){return i.id===itemId;});
-    if(!it||it.est) return; // don't overwrite manual
+    if(!it) return;
+    if(it.est&&it.est!==est){
+      // IA wants to set a different value from what's already set — log override
+      _autoFillOverrides.push({itemId:itemId,catId:catId,oldVal:it.est,newVal:est,docKey:docKey});
+    }
+    if(it.est) return; // don't overwrite manual
     it.est=est;
     if(est==='fail'&&(!it.mix||!it.mix.length)) it.mix=[0];
     marked++;
@@ -3288,6 +3305,12 @@ function autoMarkChecklistFromIA(extractedData, docKey){
     try{invalidateSelectors();}catch(x){}
     sv(); rCats(); rConteudo();
     toast('IA marcou '+marked+' item(ns) no checklist');
+  }
+  if(_autoFillOverrides.length>0){
+    setTimeout(function(){
+      toast('IA atualizou '+_autoFillOverrides.length+' item(ns) com valor diferente do manual — verifique');
+      console.info('[LOFT AutoFill] Overrides detectados (não aplicados):', _autoFillOverrides);
+    }, 400);
   }
 }
 function _applyInferenceToD(catId,itemId,inf){
@@ -4036,33 +4059,38 @@ function undoAIPrefill(){
 function qMarkAllOk(catId){
   var cat=D.checklists.find(function(c){return c.id===catId;});
   if(!cat||cat.docNaoEnviado||cat.semNecessidade)return;
-  // BUG3: toggle — if all ok already, revert to null (clear)
+  // Safety: if ALL items are already OK, do nothing — user must clear individually
   var allOk=cat.itens.every(function(it){return it.est==='ok';});
+  if(allOk){ toast('Todos os itens já estão OK'); return; }
+  // Only set null/fail → OK; never clear from OK back to null via this button
   cat.itens.forEach(function(it){
-    it.est=allOk?null:'ok';
+    if(it.est==='ok') return; // preserve already-OK items
+    it.est='ok';
     it.mix=[];
-    // sync CTX
-    try{dispatch(EV.SET_EST,{catId:catId,itemId:it.id,est:it.est||null},{undoable:true,src:'qmarkall'});}catch(x){}
+    try{dispatch(EV.SET_EST,{catId:catId,itemId:it.id,est:'ok'},{undoable:true,src:'qmarkall'});}catch(x){}
   });
   try{reconcileMacros();}catch(x){}
   try{invalidateSelectors();}catch(x){}
   sv();rCats();rConteudo();
-  toast(allOk?'Itens limpos':'✓ Todos marcados como OK');
+  toast('✓ Todos marcados como OK');
 }
 function qMarkAllFail(catId){
   var cat=D.checklists.find(function(c){return c.id===catId;});
   if(!cat)return;
-  // BUG3: toggle — if all fail, revert to null
+  // Safety: if ALL items are already fail, do nothing — user must clear individually
   var allFail=cat.itens.every(function(it){return it.est==='fail';});
+  if(allFail){ toast('Todos os itens já estão marcados como Não OK'); return; }
+  // Only set null/ok → fail; never clear from fail back to null via this button
   cat.itens.forEach(function(it){
-    it.est=allFail?null:'fail';
-    it.mix=allFail?[]:[0];
-    try{dispatch(EV.SET_EST,{catId:catId,itemId:it.id,est:it.est||null},{undoable:true,src:'qmarkall'});}catch(x){}
+    if(it.est==='fail') return; // preserve already-fail items
+    it.est='fail';
+    it.mix=[0];
+    try{dispatch(EV.SET_EST,{catId:catId,itemId:it.id,est:'fail'},{undoable:true,src:'qmarkall'});}catch(x){}
   });
   try{reconcileMacros();}catch(x){}
   try{invalidateSelectors();}catch(x){}
   sv();rCats();rConteudo();
-  toast(allFail?'Itens limpos':'Todos marcados como Não OK');
+  toast('Todos marcados como Não OK');
 }
 // BUG7: Multa distinction validation
 function validateMulta(){
@@ -4324,10 +4352,18 @@ function undoDispatch() {
   try {
     // Restore D to blank + replay events[0..target]
     var fresh = migrateData(dd());
-    // Keep non-calc fields
-    Object.assign(fresh, {form: D.form, checklists: D.checklists, boleto: D.boleto});
-    // Reset only the parts touched by events
-    if (D.calc) fresh.calc = JSON.parse(JSON.stringify(D.calc));
+    // Deep-clone ALL top-level D properties to ensure complete state restoration
+    var _fullSnap = JSON.parse(JSON.stringify(D));
+    Object.assign(fresh, {
+      form:         _fullSnap.form,
+      checklists:   _fullSnap.checklists,
+      boleto:       _fullSnap.boleto,
+      calc:         _fullSnap.calc,
+      macrosPend:   _fullSnap.macrosPend,
+      limiteCusto:  _fullSnap.limiteCusto,
+      formaPag:     _fullSnap.formaPag,
+      contratoBase: _fullSnap.contratoBase,
+    });
     _eventLog.slice(0, target+1).forEach(function(ev){ _applyEvent(ev); });
     _eventPtr = target;
     sv(); rCalc&&CR?rCalc(CR):null;
@@ -4371,7 +4407,7 @@ function getUndoState() {
 
 // Hook called after every state change
 function _onStateChange(ev) {
-  try { busEmit('STATE_CHANGE', {event:ev, ptr:_eventPtr}, 'dispatch'); } catch(x){}
+  try { busEmit('STATE_CHANGE', {event:ev, ptr:_eventPtr}, 'dispatch'); } catch(x){ console.warn('[LOFT Signal] STATE_CHANGE emit error:', x); }
   if (ev.undoable !== false) sv();
   // Update undo/redo buttons
   try {
@@ -4929,9 +4965,9 @@ function registerServiceWorker() {
             localStorage.removeItem(offlineKey);
             sv();
             toast('✓ Caso offline sincronizado!');
-          } catch(ex){}
+          } catch(ex){ console.warn('[LOFT Signal] Offline queue flush error:', ex); }
         }
-      } catch(ex){}
+      } catch(ex){ console.warn('[LOFT Signal] Online sync error:', ex); }
     });
 
     window.addEventListener('offline', function() {
@@ -5070,7 +5106,7 @@ function runPlugins(trigger, ctx) {
   var results = [];
   _plugins.forEach(function(p) {
     if (!p.triggers || !p.triggers.includes(trigger)) return;
-    if (!p.active !== false && p.active === false) return;
+    if (p.active === false) return;
     try {
       var condOk = typeof p.condition === 'function' ? p.condition(ctx) : true;
       if (!condOk) return;
@@ -5287,7 +5323,7 @@ var CaseManager = (function() {
   var _listeners = [];
 
   function _notify(event, data) {
-    _listeners.forEach(function(fn) { try{fn(event,data);}catch(ex){} });
+    _listeners.forEach(function(fn) { try{fn(event,data);}catch(ex){ console.warn('[LOFT Signal] CaseManager listener error:', ex); } });
   }
 
   function openCase(caseId, data, opts) {
