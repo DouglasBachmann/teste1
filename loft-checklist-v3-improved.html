@@ -21145,11 +21145,29 @@ document.addEventListener('DOMContentLoaded', function() {
 <script id="loft-enhancements-js">
 
 /* ═══════════════════════════════════════════════════════════════
-   LOFT ENHANCEMENTS v3 — Senior-grade augmentation layer.
+   LOFT ENHANCEMENTS v3-IMPROVED — Senior-grade augmentation layer.
    Purely additive. Zero interference with existing app logic.
    ═══════════════════════════════════════════════════════════════ */
 (function() {
   'use strict';
+
+  // ── Version badge — confirms this is the improved file
+  (function() {
+    var badge = document.createElement('div');
+    badge.id = 'loft-version-badge';
+    badge.title = 'LOFT Checklist V3 — Enhanced build';
+    badge.style.cssText = [
+      'position:fixed;bottom:4px;left:4px;z-index:7000;',
+      'font-family:monospace;font-size:9px;color:#1e1e1e;',
+      'background:#111;border:1px solid #1e1e1e;border-radius:3px;',
+      'padding:2px 6px;pointer-events:none;letter-spacing:.04em;'
+    ].join('');
+    badge.textContent = 'v3+enhanced';
+    document.addEventListener('DOMContentLoaded', function() {
+      document.body.appendChild(badge);
+    });
+    if (document.body) document.body.appendChild(badge);
+  })();
 
   // ── Milestone progress tracking (avoid repeated toasts)
   var _prevMilestone = -1;
@@ -22542,88 +22560,90 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })();
 
-    // UX-IA-LAYOUT: Reorder IA tab — move batch action buttons to bottom,
-    //   individual document accordions appear first for easier review workflow.
+    // UX-IA-LAYOUT: Reorder IA tab — batch action buttons go to bottom,
+    //   individual document accordions appear first.
+    //   Approach: wrap rValidarIA so we run AFTER every render.
     (function() {
       function _reorderIATab() {
         var panel = document.querySelector('#mc .ia-panel');
-        if (!panel || panel._loftReordered) return;
+        if (!panel) return;
 
-        // Collect all direct children
-        var children = Array.prototype.slice.call(panel.children);
-        if (children.length < 4) return; // not fully rendered yet
+        // Direct children snapshot
+        var kids = Array.prototype.slice.call(panel.children);
+        if (kids.length < 3) return;
 
-        var batchElements = [];  // elements containing batch action buttons
-        var contentElements = []; // header + API key + KB + individual accordions
-
-        children.forEach(function(child) {
-          var html = child.innerHTML || '';
-          var hasBatchBtn = (html.indexOf('iaRunAll') !== -1 || html.indexOf('iaCruzarDocumentos') !== -1 || html.indexOf('iaGerarRelatorio') !== -1);
-          // Exclude section headers (phd) and config sections (.ia-section) from batch zone
-          var isConfigSection = child.classList && (child.classList.contains('ia-section') || child.classList.contains('phd'));
-          if (hasBatchBtn && !isConfigSection) {
-            batchElements.push(child);
+        // Classify each direct child:
+        //   "batch"   = has iaRunAll OR iaCruzarDocumentos (but NOT a config .ia-section)
+        //   "content" = everything else (header, config sections, individual accordions)
+        var batchEls = [], contentEls = [];
+        kids.forEach(function(el) {
+          if (!el) return;
+          var src = el.getAttribute ? (el.getAttribute('onclick') || '') : '';
+          // Also search inner buttons for batch actions
+          var btns = el.querySelectorAll ? el.querySelectorAll('[onclick]') : [];
+          var hasRunAll = false, hasCruzar = false;
+          for (var i = 0; i < btns.length; i++) {
+            var oc = btns[i].getAttribute('onclick') || '';
+            if (oc.indexOf('iaRunAll') !== -1) hasRunAll = true;
+            if (oc.indexOf('iaCruzarDocumentos') !== -1) hasCruzar = true;
+          }
+          var isCfg = el.classList && (el.classList.contains('ia-section') || el.classList.contains('phd'));
+          if ((hasRunAll || hasCruzar) && !isCfg) {
+            batchEls.push(el);
           } else {
-            contentElements.push(child);
+            contentEls.push(el);
           }
         });
 
-        if (batchElements.length === 0) return;
+        if (batchEls.length === 0) return;
 
-        // Rebuild panel: config/content first, then batch zone
+        // Move all children out, then re-insert in new order
         var frag = document.createDocumentFragment();
+        contentEls.forEach(function(el) { frag.appendChild(el); });
 
-        // Add non-batch elements first
-        contentElements.forEach(function(el) { frag.appendChild(el); });
-
-        // Add a separator before batch zone
+        // Separator + label
         var sep = document.createElement('div');
-        sep.style.cssText = 'border-top:1px solid #1a1a1a;margin:16px 0 12px;';
+        sep.style.cssText = 'border-top:1px solid #1c1c1c;margin:14px 0 10px;';
         frag.appendChild(sep);
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-family:Rajdhani,sans-serif;font-size:10px;font-weight:700;color:#3a3a3a;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;';
+        lbl.textContent = 'Validacao em Conjunto';
+        frag.appendChild(lbl);
 
-        // Add label
-        var label = document.createElement('div');
-        label.style.cssText = 'font-family:Rajdhani,sans-serif;font-size:10px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;';
-        label.textContent = 'Validacao em Conjunto';
-        frag.appendChild(label);
-
-        // Add batch elements (deduplicate: if two elements both have iaRunAll, keep only one)
-        var addedRunAll = false;
-        batchElements.forEach(function(el) {
-          var html = el.innerHTML || '';
-          var hasRunAll = html.indexOf('iaRunAll') !== -1;
-          var hasCruzar = html.indexOf('iaCruzarDocumentos') !== -1;
-          // The new topbar (has all 3) takes priority; skip old-only-runAll
-          if (hasRunAll && !hasCruzar && addedRunAll) return; // skip duplicate old batch
-          if (hasRunAll) addedRunAll = true;
+        // Add batch elements — deduplicate: prefer the one with iaCruzarDocumentos (full topbar)
+        var hasFullBar = batchEls.some(function(el){
+          var btns = el.querySelectorAll('[onclick]');
+          for (var i=0;i<btns.length;i++) if (btns[i].getAttribute('onclick').indexOf('iaCruzarDocumentos')!==-1) return true;
+          return false;
+        });
+        batchEls.forEach(function(el) {
+          // If we have the full topbar, skip the old-style runAll-only div
+          if (hasFullBar) {
+            var btns = el.querySelectorAll('[onclick]');
+            var hasCruzar = false;
+            for (var i=0;i<btns.length;i++) if (btns[i].getAttribute('onclick').indexOf('iaCruzarDocumentos')!==-1) hasCruzar=true;
+            if (!hasCruzar) return; // skip old batch (duplicate functionality)
+          }
           frag.appendChild(el);
         });
 
-        panel.innerHTML = '';
+        // Clear panel and reinsert in correct order
+        while (panel.firstChild) panel.removeChild(panel.firstChild);
         panel.appendChild(frag);
-        panel._loftReordered = true;
       }
 
-      // Watch for IA tab renders (rValidarIA sets innerHTML on #mc)
-      var _iaLayoutObs = new MutationObserver(function(muts) {
-        for (var i = 0; i < muts.length; i++) {
-          var m = muts[i];
-          if (m.type === 'childList') {
-            // Check if IA panel appeared
-            if (document.querySelector('#mc .ia-panel')) {
-              setTimeout(_reorderIATab, 80); // slight delay for full render
-              return;
-            }
-          }
-        }
-      });
-      var _mcEl = document.getElementById('mc');
-      if (_mcEl) {
-        _iaLayoutObs.observe(_mcEl, { childList: true });
-      }
-
-      // Also run immediately if already on IA tab
-      setTimeout(_reorderIATab, 300);
+      // Wrap rValidarIA to run after every IA tab render
+      setTimeout(function() {
+        var _origRValidarIA = typeof window.rValidarIA === 'function' ? window.rValidarIA : null;
+        if (!_origRValidarIA) return;
+        window.rValidarIA = function() {
+          _origRValidarIA.apply(this, arguments);
+          // Run after DOM settles
+          requestAnimationFrame(function() { _reorderIATab(); });
+        };
+        // Run now if already on IA tab
+        if (document.querySelector('#mc .ia-panel')) _reorderIATab();
+      }, 500);
     })();
   }
 
