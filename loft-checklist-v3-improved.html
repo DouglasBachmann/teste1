@@ -1083,6 +1083,28 @@ header{background:#1a1a1a;border-bottom:1px solid #141414;}
 @keyframes ia-spin{to{transform:rotate(360deg);}}
 @keyframes ia-pulse { 0%,100%{border-color:#333} 50%{border-color:#fa0707} }
 .ia-loading-pulse { animation: ia-pulse 1.5s ease-in-out infinite !important; }
+/* ── Drop Zone Universal ─────────────────────────────────────────────────── */
+.udz-zone{border:2px dashed #2a2a2a;border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;margin-bottom:4px;}
+.udz-zone:hover,.udz-zone.udz-drag{border-color:var(--brand);background:rgba(250,7,7,.04);}
+.udz-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.udz-zone-title{font-size:15px;font-weight:700;color:#e0e0e0;margin-bottom:4px;letter-spacing:.01em;}
+.udz-zone-sub{font-size:11px;color:#555;line-height:1.6;}
+.udz-zone-types{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:10px;}
+.udz-type-pill{font-size:9px;color:#444;background:#111;border:1px solid #1e1e1e;border-radius:20px;padding:2px 8px;text-transform:uppercase;letter-spacing:.06em;}
+.udz-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;margin-bottom:4px;background:#0d0d0d;border:1px solid #1a1a1a;transition:border-color .2s;}
+.udz-item.udz-ok{border-color:rgba(74,222,128,.15);}
+.udz-item.udz-err{border-color:rgba(248,113,113,.15);}
+.udz-item.udz-busy{border-color:rgba(200,150,50,.2);}
+.udz-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
+.udz-dot-pending{background:rgba(85,85,85,.15);color:#555;}
+.udz-dot-busy{background:rgba(200,150,50,.12);color:#c8963c;}
+.udz-dot-ok{background:rgba(74,222,128,.12);color:#4ADE80;}
+.udz-dot-err{background:rgba(248,113,113,.12);color:#f87171;}
+.udz-fname{font-size:12px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
+.udz-fmeta{font-size:10px;color:#555;margin-top:1px;}
+.udz-rm{color:#2a2a2a;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:3px;margin-left:auto;flex-shrink:0;transition:color .15s;}
+.udz-rm:hover{color:#f87171;}
+.udz-spin{display:inline-block;width:12px;height:12px;border:2px solid #333;border-top-color:#c8963c;border-radius:50%;animation:ia-spin .7s linear infinite;}
 .ia-result{margin-top:20px;background:#181818;border:1px solid #1a1a1a;border-radius:8px;overflow:hidden;}
 .ia-result-hd{padding:14px 18px;border-bottom:1px solid #1a1a1a;font-size:15px;font-weight:700;color:#fff;display:flex;justify-content:space-between;align-items:center;}
 .ia-result-body{padding:18px;font-size:15px;line-height:1.7;color:#ccc;white-space:pre-wrap;word-break:break-word;max-height:70vh;overflow-y:auto;}
@@ -16824,6 +16846,32 @@ function rValidarIA(){
     '<div style="font-size:10px;color:#555;margin-top:6px">aistudio.google.com/apikey — Flash (gratis) + cache | Pro so para danos (~R$0,15) | '+iaCacheStats()+'  <a href="#" onclick="event.preventDefault();iaCacheClear()" style="color:#555;text-decoration:underline">limpar cache</a></div>'+
   '</div>'+
 
+  // ── DROP ZONE UNIVERSAL ──
+  '<div class="ia-section" style="border-color:#1e1e1e">'+
+    '<div class="ia-section-title" style="display:flex;align-items:center;gap:8px">'+
+      '⚡ Drop Zone Universal'+
+      '<span style="font-size:9px;color:#555;font-weight:400;text-transform:none;letter-spacing:0">Solte todos os documentos de uma vez — a IA identifica e aloca automaticamente</span>'+
+    '</div>'+
+    '<div class="udz-zone" id="udz-dropzone"'+
+      ' ondragover="event.preventDefault();document.getElementById(\'udz-dropzone\').classList.add(\'udz-drag\')"'+
+      ' ondragleave="document.getElementById(\'udz-dropzone\').classList.remove(\'udz-drag\')"'+
+      ' ondrop="event.preventDefault();document.getElementById(\'udz-dropzone\').classList.remove(\'udz-drag\');_udzAddFiles(event.dataTransfer.files)"'+
+    '>'+
+      '<input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="_udzAddFiles(this.files);this.value=\'\'" />'+
+      '<div class="udz-zone-title">Arraste ou clique para selecionar</div>'+
+      '<div class="udz-zone-sub">Contrato · Vistoria · Chaves · Orçamento · E-mail · Fotos · Boleto<br>O Gemini classifica cada arquivo e coloca no slot certo</div>'+
+      '<div class="udz-zone-types">'+
+        '<span class="udz-type-pill">PDF</span>'+
+        '<span class="udz-type-pill">JPG</span>'+
+        '<span class="udz-type-pill">PNG</span>'+
+        '<span class="udz-type-pill">até 150 MB</span>'+
+        '<span class="udz-type-pill">múltiplos arquivos</span>'+
+      '</div>'+
+    '</div>'+
+    '<div id="udz-list"></div>'+
+    '<div style="font-size:10px;color:#555;margin-top:6px">Processamento sequencial — 1 arquivo por vez para não sobrecarregar o Gemini. Arquivos desconhecidos podem ser arrastados manualmente para os slots abaixo.</div>'+
+  '</div>'+
+
   // ── KB EDITOR ──
   (function(){
     var _kbOpen = sessionStorage.getItem('kb_editor_open') === '1';
@@ -17827,10 +17875,10 @@ function iaCtx(){
 // ── iaFileParts ───────────────────────────────────────────────────────────────
 async function iaFileParts(file){
   var sizeMB=file.size/1048576;
-  if(sizeMB>50)throw new Error('Arquivo muito grande ('+sizeMB.toFixed(1)+'MB). Limite: 50MB.');
+  if(sizeMB>150)throw new Error('Arquivo muito grande ('+sizeMB.toFixed(1)+'MB). Limite: 150MB.');
   // PERF#75: Basic check for password-protected PDF (encrypted header)
   // Password check removed — send to IA and let it handle
-  if(sizeMB>20)toast('Arquivo grande ('+sizeMB.toFixed(1)+'MB) — pode demorar...');
+  if(sizeMB>30)toast('Arquivo grande ('+sizeMB.toFixed(1)+'MB) — pode demorar...');
   var _ck=Object.keys(_iaFileCache).find(function(k){
     var c=_iaFileCache[k];
     return c&&(c.file===file||(c.name===file.name&&c.size===file.size));
@@ -17878,6 +17926,185 @@ async function iaDetectTipoDoc(key,file){
 }
 
 if(typeof window!=='undefined')window.iaFileParts=iaFileParts;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DROP ZONE UNIVERSAL — classifica e aloca qualquer documento automaticamente
+// Fila sequencial (1 por vez) para não sobrecarregar o Gemini.
+// ══════════════════════════════════════════════════════════════════════════════
+var _UDZ_QUEUE   = [];     // { file, status, tipo, key, label, isArray, error }
+var _UDZ_RUNNING = false;
+
+// Mapa: tipo retornado pelo Gemini → key de IA_DOCS + metadados
+var _UDZ_MAP = {
+  CONTRATO_LOCACAO:   { key:'contrato',          label:'Contrato de Locação',           isArray:false },
+  TERMO_CHAVES:       { key:'chaves',             label:'Termo de Entrega de Chaves',    isArray:false },
+  VISTORIA_ENTRADA:   { key:'vistoriaEntrada',    label:'Vistoria de Entrada',           isArray:false },
+  VISTORIA_SAIDA:     { key:'vistoriaSaida',      label:'Vistoria de Saída',             isArray:false },
+  EMAIL_FORMALIZACAO: { key:'emailFormalizacao',  label:'E-mail de Formalização',        isArray:false },
+  ORCAMENTO:          { key:'orcamentos',         label:'Orçamento',                     isArray:true  },
+  FOTOS_DANOS:        { key:'danos_saida',        label:'Fotos de Danos',                isArray:true  },
+  BOLETO:             { key:'boletos',            label:'Boleto Bancário',               isArray:true  }
+};
+
+// Classifica UM arquivo — retorna o tipo detectado ou 'DESCONHECIDO'
+async function _udzClassify(item){
+  item.status='classificando';
+  _udzRender();
+  try{
+    var parts=await iaFileParts(item.file);
+    var prompt=
+      'Analise este documento imobiliário brasileiro e responda APENAS com UMA destas palavras exatas:\n'+
+      'CONTRATO_LOCACAO | VISTORIA_ENTRADA | VISTORIA_SAIDA | TERMO_CHAVES | ORCAMENTO | EMAIL_FORMALIZACAO | FOTOS_DANOS | BOLETO | DESCONHECIDO\n\n'+
+      'Critérios:\n'+
+      '- CONTRATO_LOCACAO: contrato de aluguel ou locação residencial/comercial\n'+
+      '- VISTORIA_ENTRADA: laudo ou vistoria de entrada/início de contrato\n'+
+      '- VISTORIA_SAIDA: laudo ou vistoria de saída/fim de contrato\n'+
+      '- TERMO_CHAVES: termo de entrega ou devolução de chaves\n'+
+      '- ORCAMENTO: orçamento de serviço, nota fiscal de reparo ou manutenção\n'+
+      '- EMAIL_FORMALIZACAO: e-mail de desocupação, aviso ou formalização de saída\n'+
+      '- FOTOS_DANOS: fotos ou imagens de avarias, danos ou estado do imóvel\n'+
+      '- BOLETO: boleto bancário, comprovante de pagamento de aluguel ou condomínio\n\n'+
+      'Responda somente a palavra, sem explicação nem pontuação.';
+    var result=await iaCall('gemini-2.5-flash','Classificador de documentos imobiliários.',
+      [{text:prompt}].concat(parts),20,0);
+    var tipo=result.trim().toUpperCase().replace(/[^A-Z_]/g,'');
+    var mapped=_UDZ_MAP[tipo];
+    if(mapped){
+      item.status='identificado'; item.tipo=tipo;
+      item.key=mapped.key; item.label=mapped.label; item.isArray=mapped.isArray;
+    }else{
+      item.status='desconhecido'; item.label='Não identificado';
+    }
+  }catch(err){
+    item.status='erro'; item.error=err.message||'Erro desconhecido';
+  }
+  _udzRender();
+}
+
+// Aloca o arquivo no slot correto de IA_DOCS
+function _udzAllocate(item){
+  if(!item.key)return;
+  if(item.isArray){
+    if(!Array.isArray(IA_DOCS[item.key]))IA_DOCS[item.key]=[];
+    var dup=IA_DOCS[item.key].some(function(f){return f.name===item.file.name&&f.size===item.file.size;});
+    if(!dup)IA_DOCS[item.key].push(item.file);
+  }else{
+    IA_DOCS[item.key]=item.file;
+  }
+  item.status='alocado';
+  _udzRender();
+}
+
+// Processa fila sequencialmente — 1 por vez, com pausa entre chamadas
+async function _udzProcess(){
+  if(_UDZ_RUNNING)return;
+  _UDZ_RUNNING=true;
+  var pending=_UDZ_QUEUE.filter(function(i){return i.status==='pendente';});
+  for(var i=0;i<pending.length;i++){
+    await _udzClassify(pending[i]);
+    if(pending[i].status==='identificado') _udzAllocate(pending[i]);
+    // Pausa entre chamadas para evitar rate limit do Gemini
+    if(i<pending.length-1) await new Promise(function(r){setTimeout(r,1800);});
+  }
+  _UDZ_RUNNING=false;
+  // Resumo final
+  var ok=_UDZ_QUEUE.filter(function(i){return i.status==='alocado';}).length;
+  var fail=_UDZ_QUEUE.filter(function(i){return i.status==='erro'||i.status==='desconhecido';}).length;
+  if(ok>0) toast('✓ '+ok+' documento(s) alocado(s)'+(fail?' · '+fail+' não identificado(s)'),'success');
+  // Atualiza a seção de upload para mostrar arquivos alocados
+  if(typeof rValidarIA==='function') setTimeout(rValidarIA,200);
+}
+
+// Entry point — recebe FileList ou Array de File
+function _udzAddFiles(files){
+  if(!files||!files.length)return;
+  var apiKey=_getIaKey();
+  if(!apiKey||!apiKey.trim().startsWith('AIza')){
+    toast('Configure a API Key do Gemini primeiro','warn'); return;
+  }
+  Array.from(files).forEach(function(f){
+    var dup=_UDZ_QUEUE.some(function(q){return q.file.name===f.name&&q.file.size===f.size;});
+    if(!dup) _UDZ_QUEUE.push({file:f,status:'pendente',tipo:null,key:null,label:null,isArray:false,error:''});
+  });
+  _udzRender();
+  _udzProcess();
+}
+
+function _udzRemove(idx){
+  if(_UDZ_QUEUE[idx]&&_UDZ_QUEUE[idx].status==='classificando')return; // não remove enquanto processa
+  _UDZ_QUEUE.splice(idx,1);
+  _udzRender();
+}
+function _udzClear(){
+  if(_UDZ_RUNNING){toast('Aguarde a classificação terminar','warn');return;}
+  _UDZ_QUEUE=[];
+  _udzRender();
+}
+
+// Renderiza a lista de progresso dentro do elemento #udz-list
+function _udzRender(){
+  var el=document.getElementById('udz-list');
+  if(!el)return;
+  if(!_UDZ_QUEUE.length){el.innerHTML='';return;}
+
+  var DOT={
+    pendente:    {cls:'udz-dot-pending', ico:'·'},
+    classificando:{cls:'udz-dot-busy',  ico:'spin'},
+    identificado:{cls:'udz-dot-ok',     ico:'✓'},
+    alocado:     {cls:'udz-dot-ok',     ico:'✓'},
+    desconhecido:{cls:'udz-dot-err',    ico:'?'},
+    erro:        {cls:'udz-dot-err',    ico:'✗'}
+  };
+  var ITEM_CLS={pendente:'',classificando:'udz-busy',identificado:'udz-ok',alocado:'udz-ok',desconhecido:'udz-err',erro:'udz-err'};
+
+  var html='';
+  _UDZ_QUEUE.forEach(function(item,idx){
+    var d=DOT[item.status]||DOT.pendente;
+    var fname=item.file.name.length>34?item.file.name.substring(0,31)+'…':item.file.name;
+    var fsize=(item.file.size/1048576).toFixed(1)+'MB';
+    var metaLabel=item.status==='alocado'?item.label
+      :item.status==='classificando'?'Classificando...'
+      :item.status==='erro'?(item.error||'Erro')
+      :item.status==='desconhecido'?'Não identificado — arraste para o slot correto'
+      :'Na fila';
+    var metaColor=item.status==='alocado'?'#4ADE80'
+      :item.status==='classificando'?'#c8963c'
+      :(item.status==='erro'||item.status==='desconhecido')?'#f87171':'#555';
+    var dotInner=d.ico==='spin'?'<span class="udz-spin"></span>':d.ico;
+    var rmBtn=item.status!=='classificando'
+      ?'<span class="udz-rm" onclick="_udzRemove('+idx+')" title="Remover">×</span>':'';
+    html+='<div class="udz-item '+ITEM_CLS[item.status]+'">'
+      +'<div class="udz-dot '+d.cls+'">'+dotInner+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div class="udz-fname">'+e(fname)+'</div>'
+        +'<div class="udz-fmeta"><span style="color:#444">'+fsize+'</span>'
+          +(metaLabel?' · <span style="color:'+metaColor+'">'+e(metaLabel)+'</span>':'')+'</div>'
+      +'</div>'
+      +rmBtn
+      +'</div>';
+  });
+
+  // Barra de progresso e botões de ação
+  var total=_UDZ_QUEUE.length;
+  var done=_UDZ_QUEUE.filter(function(i){return i.status==='alocado';}).length;
+  var busy=_UDZ_RUNNING;
+  if(total>1){
+    var pct=Math.round(done/total*100);
+    html+='<div style="margin-top:8px;height:3px;background:#111;border-radius:2px">'
+      +'<div style="height:3px;width:'+pct+'%;background:#4ADE80;border-radius:2px;transition:width .4s"></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:#555;text-align:center;margin-top:4px">'+done+' de '+total+' identificados</div>';
+  }
+  if(!busy&&total>0){
+    var hasPending=_UDZ_QUEUE.some(function(i){return i.status==='pendente'||i.status==='erro';});
+    html+='<div style="display:flex;gap:6px;margin-top:8px">';
+    if(hasPending) html+='<button onclick="_udzProcess()" style="flex:1;padding:7px;background:#111;border:1px solid #222;border-radius:5px;color:#888;font-size:11px;cursor:pointer;font-weight:600">↺ Reprocessar pendentes</button>';
+    html+='<button onclick="_udzClear()" style="padding:7px 12px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:5px;color:#444;font-size:11px;cursor:pointer">Limpar lista</button>';
+    html+='</div>';
+  }
+
+  el.innerHTML=html;
+}
 // ── _estimateTokens ───────────────────────────────────────────────────────────
 function _estimateTokens(text){
   return Math.ceil((text||'').length/3.5);
