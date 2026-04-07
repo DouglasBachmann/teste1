@@ -22801,34 +22801,20 @@ document.addEventListener('DOMContentLoaded', function() {
   // LOFT-SECURITY — Security patches from audit findings
   // ═══════════════════════════════════════════════════════════
   (function applySecurityPatches() {
-    // 1. Intercept localStorage.getItem/setItem for 'loft_ia_key'
-    //    Routes to sessionStorage with XOR obfuscation.
-    //    All existing calls to localStorage.getItem('loft_ia_key') work transparently.
-    var _SEED = 'loft_checklist_v3';
 
-    function _xorEnc(str) {
-      var s = _SEED.split('');
-      var keys = [];
-      for (var i = 0; i < 256; i++) keys.push((s[i % s.length].charCodeAt(0) ^ i) & 0xFF);
-      var out = [];
-      for (var i = 0; i < str.length; i++) out.push(String.fromCharCode(str.charCodeAt(i) ^ keys[i % keys.length]));
-      return btoa(out.join(''));
-    }
+    // ── SEC-1: API key in MEMORY ONLY ────────────────────────
+    // Never persists to localStorage or sessionStorage.
+    // Existing code calls localStorage.getItem/setItem('loft_ia_key') —
+    // we intercept those calls and route to a JS variable instead.
+    // Key is lost on page refresh (intentional — forces re-entry each session).
+    var _memKey = ''; // in-memory only
 
-    function _xorDec(encoded) {
-      try {
-        var str = atob(encoded);
-        var s = _SEED.split('');
-        var keys = [];
-        for (var i = 0; i < 256; i++) keys.push((s[i % s.length].charCodeAt(0) ^ i) & 0xFF);
-        var out = [];
-        for (var i = 0; i < str.length; i++) out.push(String.fromCharCode(str.charCodeAt(i) ^ keys[i % keys.length]));
-        return out.join('');
-      } catch(e) { return ''; }
-    }
-
-    var KEY_NAME = 'loft_ia_key';
-    var SESSION_KEY = '_lft_k';
+    // On load: wipe any previously stored key
+    try {
+      localStorage.removeItem('loft_ia_key');
+      sessionStorage.removeItem('_lft_k');
+      sessionStorage.removeItem('loft_ia_key');
+    } catch(ex) {}
 
     try {
       var _origGet = Storage.prototype.getItem;
@@ -22836,33 +22822,72 @@ document.addEventListener('DOMContentLoaded', function() {
       var _origRem = Storage.prototype.removeItem;
 
       Storage.prototype.getItem = function(key) {
-        if (this === localStorage && key === KEY_NAME) {
-          // Prefer sessionStorage
-          var enc = _origGet.call(sessionStorage, SESSION_KEY);
-          if (enc) return _xorDec(enc);
-          // Migrate from plaintext localStorage
-          var plain = _origGet.call(localStorage, KEY_NAME);
-          if (plain && plain.startsWith('AIza')) {
-            _origSet.call(sessionStorage, SESSION_KEY, _xorEnc(plain));
-            _origSet.call(localStorage, KEY_NAME, ''); // clear plaintext
-          }
-          return plain || '';
-        }
+        if (key === 'loft_ia_key') return _memKey || '';
         return _origGet.call(this, key);
       };
 
       Storage.prototype.setItem = function(key, value) {
-        if (this === localStorage && key === KEY_NAME) {
-          // Redirect to sessionStorage
-          _origSet.call(sessionStorage, SESSION_KEY, _xorEnc(String(value)));
-          _origSet.call(localStorage, KEY_NAME, ''); // clear any plaintext
+        if (key === 'loft_ia_key') {
+          _memKey = String(value || '');
+          // Never write to storage — memory only
           return;
         }
         return _origSet.call(this, key, value);
       };
+
+      Storage.prototype.removeItem = function(key) {
+        if (key === 'loft_ia_key') { _memKey = ''; return; }
+        return _origRem.call(this, key);
+      };
     } catch(ex) {
-      // Storage prototype patching not supported — skip silently
+      // Storage prototype patching not supported
     }
+
+    // ── SEC-2: Session expiry — clear key after 1h inactivity ─
+    (function() {
+      var INACTIVE_MS = 60 * 60 * 1000; // 1 hour (was 4h)
+      var _lastActivity = Date.now();
+      ['mousemove','keydown','click','touchstart'].forEach(function(ev) {
+        window.addEventListener(ev, function() { _lastActivity = Date.now(); }, {passive: true});
+      });
+      setInterval(function() {
+        if (_memKey && Date.now() - _lastActivity > INACTIVE_MS) {
+          _memKey = '';
+          try { localStorage.removeItem('loft_ia_key'); sessionStorage.removeItem('_lft_k'); } catch(e) {}
+          if (typeof toast === 'function') toast('Sessão expirada — reinsira a chave Gemini.', 'warn');
+        }
+      }, 60 * 1000); // check every minute
+    })();
+
+    // ── SEC-3: 30s timeout on ALL Gemini/Anthropic fetch calls ─
+    (function() {
+      var _origFetch = window.fetch;
+      window.fetch = function(url, opts) {
+        var isAI = typeof url === 'string' && (
+          url.indexOf('generativelanguage.googleapis.com') !== -1 ||
+          url.indexOf('api.anthropic.com') !== -1 ||
+          url.indexOf('openai.com') !== -1
+        );
+        if (!isAI) return _origFetch.apply(this, arguments);
+
+        var ctrl = new AbortController();
+        var timer = setTimeout(function() {
+          ctrl.abort();
+        }, 30000); // 30 seconds
+
+        opts = Object.assign({}, opts || {}, { signal: ctrl.signal });
+        return _origFetch(url, opts).then(function(res) {
+          clearTimeout(timer);
+          return res;
+        }, function(err) {
+          clearTimeout(timer);
+          if (err && err.name === 'AbortError') {
+            if (typeof toast === 'function') toast('Tempo esgotado — a IA demorou mais de 30s. Tente novamente.', 'error');
+          }
+          return Promise.reject(err);
+        });
+      };
+    })();
 
     // 2. Safe RegExp wrapper — catches invalid patterns from dynamic sources
     //    Prevents "Invalid regular expression: Range out of order" crashes
@@ -22983,49 +23008,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })();
 
-    // SEC-NEW-3: Session expiry — clear API key after 4h inactivity
-    (function() {
-      var INACTIVE_MS = 4 * 60 * 60 * 1000; // 4 hours
-      var _lastActivity = Date.now();
-      var _EVENTS = ['mousemove','keydown','click','touchstart'];
-      _EVENTS.forEach(function(ev) {
-        window.addEventListener(ev, function() { _lastActivity = Date.now(); }, {passive: true});
-      });
-      setInterval(function() {
-        if (Date.now() - _lastActivity > INACTIVE_MS) {
-          try {
-            sessionStorage.removeItem('_lft_k');
-            console.info('[LOFT-SEC] Chave de API removida por inatividade (4h).');
-          } catch(ex) {}
-        }
-      }, 5 * 60 * 1000); // check every 5min
-    })();
-
-    // SEC-NEW-4: Extended blob URL expiry (5s) and API key leak detection
-    (function() {
-      // Wrap URL.createObjectURL to track and revoke blob URLs after 5s (instead of 2s)
-      var _origCreate = URL.createObjectURL.bind(URL);
-      URL.createObjectURL = function(obj) {
-        var url = _origCreate(obj);
-        setTimeout(function() {
-          try { URL.revokeObjectURL(url); } catch(e) {}
-        }, 5000);
-        return url;
-      };
-    })();
-
-    // SEC-NEW-5: API key leak detection — warn if key appears in visible DOM text
+    // SEC-4: API key leak detection — warn if key appears in visible DOM text
     setTimeout(function() {
       try {
-        var key = sessionStorage.getItem('_lft_k');
-        if (!key) return;
-        var decoded = typeof window._xorDec === 'function' ? '' : ''; // key is encoded
-        // Just check if any text node contains something that looks like an API key (AIzaSy...)
         var body = document.body.textContent || '';
-        var keyMatch = body.match(/AIzaSy[A-Za-z0-9_-]{33}/);
-        if (keyMatch) {
-          console.warn('[LOFT-SEC] ⚠ API key parece estar visível no DOM! Recarregue a página e não compartilhe screenshots.');
-          loftToast && loftToast('⚠ Chave API pode estar exposta no DOM. Verifique.', 'error', 8000);
+        if (/AIzaSy[A-Za-z0-9_-]{33}/.test(body)) {
+          console.warn('[LOFT-SEC] API key visível no DOM — não compartilhe screenshots.');
+          if (typeof toast === 'function') toast('⚠ Chave API visível no DOM — recarregue a página.', 'error');
         }
       } catch(ex) {}
     }, 3000);
