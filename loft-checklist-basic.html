@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<!--
+  LOFT Checklist Basic — Flask-compatible template
+  Drop into: /templates/checklist/index.html
+  Route:     @app.route("/checklist")
+  Stack:     Bootstrap 5.3.2 · jQuery 3.6 · no API key embedded
+  API stub:  POST /api/checklist/ia  { contract_id, items, notes } → { resultado }
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checklist de Saída — Loft Fiança</title>
+
+  <!-- Bootstrap 5.3.2 (CDN — same as Loft Hub) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons 1.11 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Inter font (Loft Hub default) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --loft-green: #21A484;
+      --loft-red:   #ff4949;
+      --loft-dark:  #1a2332;
+      --loft-muted: #6c757d;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f4f6f9;
+      font-size: 14px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--loft-dark);
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .topbar .brand { font-weight: 700; font-size: 16px; letter-spacing: .3px; }
+    .topbar .badge-env {
+      font-size: 10px;
+      background: var(--loft-green);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+
+    /* ── Page layout ── */
+    .page-header {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 18px 24px 14px;
+    }
+    .page-header h1 { font-size: 20px; font-weight: 700; margin: 0; color: var(--loft-dark); }
+    .page-header p  { font-size: 13px; color: var(--loft-muted); margin: 4px 0 0; }
+
+    .main-wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* ── Contract ID card ── */
+    .id-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .id-card label { font-weight: 600; font-size: 13px; color: var(--loft-dark); margin-bottom: 6px; display: block; }
+    .id-card .form-control { max-width: 320px; font-size: 14px; border-color: #cbd5e1; }
+    .id-card .form-control:focus { border-color: var(--loft-green); box-shadow: 0 0 0 3px rgba(33,164,132,.12); }
+
+    /* ── Section card ── */
+    .section-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 18px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: background .15s;
+    }
+    .section-head:hover { background: #f8fafc; }
+    .section-head.open  { border-bottom-color: #e2e8f0; background: #f8fafc; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--loft-dark);
+    }
+    .section-title .ico { font-size: 17px; }
+    .section-badges { display: flex; align-items: center; gap: 6px; }
+
+    /* progress pill */
+    .prog-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: var(--loft-muted);
+    }
+    .prog-pill.done    { background: #d1fae5; color: #065f46; }
+    .prog-pill.partial { background: #fef3c7; color: #92400e; }
+
+    .section-body { padding: 14px 18px 16px; }
+
+    /* ── Checklist item row ── */
+    .item-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .item-row:last-of-type { border-bottom: none; }
+    .item-label { flex: 1; font-size: 13px; color: #374151; line-height: 1.45; padding-top: 4px; }
+    .item-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+    /* Status buttons */
+    .btn-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all .12s;
+      white-space: nowrap;
+    }
+    .btn-status:hover { background: #f8fafc; }
+    .btn-status.ok   { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+    .btn-status.pend { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+    .btn-status.na   { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+
+    /* ── Notes textarea ── */
+    .notes-wrap { margin-top: 10px; }
+    .notes-wrap label { font-size: 11.5px; font-weight: 600; color: var(--loft-muted); margin-bottom: 4px; display: block; }
+    .notes-wrap textarea {
+      width: 100%;
+      font-size: 13px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      resize: vertical;
+      min-height: 60px;
+      color: #374151;
+    }
+    .notes-wrap textarea:focus { outline: none; border-color: var(--loft-green); box-shadow: 0 0 0 3px rgba(33,164,132,.1); }
+
+    /* ── Bottom action bar ── */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    .action-bar .summary-text { font-size: 13px; color: var(--loft-muted); }
+    .action-bar .summary-text strong { color: var(--loft-dark); }
+
+    /* ── IA result panel ── */
+    #ia-panel {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    #ia-panel .ia-header { font-weight: 700; font-size: 15px; color: var(--loft-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    #ia-panel .ia-result { font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; color: #374151; }
+    .spinner-sm { width: 18px; height: 18px; border-width: 2.5px; }
+
+    /* ── Toast ── */
+    .loft-toast {
+      position: fixed;
+      bottom: 70px; right: 20px;
+      background: var(--loft-dark);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity .2s;
+      pointer-events: none;
+    }
+    .loft-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Top bar (replicates Loft Hub header-modern) -->
+<div class="topbar">
+  <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+    <rect width="40" height="40" rx="8" fill="#21A484"/>
+    <path d="M8 28 L20 12 L32 28" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M14 28 L20 20 L26 28" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+  <span class="brand">Loft Fiança</span>
+  <span class="badge-env">Checklist</span>
+</div>
+
+<!-- Page header -->
+<div class="page-header">
+  <h1>Checklist de Análise de Saída</h1>
+  <p>Valide os documentos da rescisão e gere a análise via IA.</p>
+</div>
+
+<!-- Main content -->
+<div class="main-wrap">
+
+  <!-- Contract ID -->
+  <div class="id-card">
+    <label for="contract-id"><i class="bi bi-hash me-1"></i>ID do Contrato</label>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <input type="text" id="contract-id" class="form-control" placeholder="Ex: LFT-2024-00123" autocomplete="off">
+      <button class="btn btn-outline-secondary btn-sm" onclick="clearAll()">
+        <i class="bi bi-trash me-1"></i>Limpar tudo
+      </button>
+    </div>
+  </div>
+
+  <!-- IA result panel (shown after analysis) -->
+  <div id="ia-panel">
+    <div class="ia-header">
+      <i class="bi bi-stars text-success"></i>
+      Análise IA — LORI
+    </div>
+    <div id="ia-result" class="ia-result"></div>
+  </div>
+
+  <!-- Checklist sections — rendered by JS -->
+  <div id="checklist-root"></div>
+
+</div><!-- /main-wrap -->
+
+<!-- Fixed bottom action bar -->
+<div class="action-bar">
+  <div class="summary-text">
+    <strong id="count-ok">0</strong> OK &nbsp;·&nbsp;
+    <strong id="count-pend">0</strong> Pendente &nbsp;·&nbsp;
+    <strong id="count-na">0</strong> N/A &nbsp;·&nbsp;
+    <span id="count-blank">0 sem resposta</span>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary btn-sm" onclick="copyReport()">
+      <i class="bi bi-clipboard me-1"></i>Copiar relatório
+    </button>
+    <button class="btn btn-sm text-white" style="background:var(--loft-green)" onclick="runIA()" id="btn-ia">
+      <i class="bi bi-stars me-1"></i>Analisar com IA
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="loft-toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   LOFT Checklist Basic — self-contained state machine
+   State lives in-memory + localStorage key "lcb_state"
+   ═══════════════════════════════════════════════════════════════ */
+
+// ── Checklist categories & items ────────────────────────────────
+const CATS = [
+  { id: 1,  ico: '📋', nome: 'Contrato de Locação', itens: [
+    'Contrato ausente na plataforma ou apenas aditivo enviado',
+    'Contrato incompleto: faltam cláusulas ou páginas',
+    'Contrato assinado por terceiros sem procuração',
+    'Assinatura digital sem certificado de assinatura',
+    'Documento não pertence ao imóvel',
+    'O inquilino da plataforma não assinou o contrato',
+    'Troca de locatário: novo contrato não cita o inquilino da plataforma',
+  ]},
+  { id: 2,  ico: '🔑', nome: 'Entrega das Chaves / Distrato', itens: [
+    'Documento de entrega das chaves não enviado',
+    'Termo incompleto ou incorreto',
+    'Termo não assinado',
+    'Assinado por terceiros sem procuração reconhecida no contrato',
+    'Desocupação na plataforma sem o termo de chaves',
+  ]},
+  { id: 3,  ico: '✉️', nome: 'E-mail de Formalização', itens: [
+    'Data de desocupação ausente no e-mail',
+    'Data de desocupação diverge da entrega das chaves',
+    'Débito formalizado na plataforma não consta no e-mail',
+    'E-mail enviado para endereço divergente da plataforma',
+    'E-mail incompleto ou endereço do locatário oculto',
+  ]},
+  { id: 4,  ico: '🏃', nome: 'Vistoria de Saída', itens: [
+    'Documento de vistoria de saída ausente',
+    'Vistoria sem assinatura ou pendência de uma das partes',
+    'Documento não pertence ao imóvel / endereço divergente',
+    'Assinatura digital sem certificado de assinatura',
+    'Laudo apenas com fotos, sem descrição',
+  ]},
+  { id: 5,  ico: '🚪', nome: 'Vistoria de Entrada', itens: [
+    'Documento de vistoria de entrada ausente na plataforma',
+    'Vistoria sem assinatura ou pendência de uma das partes',
+    'Documento não pertence ao imóvel / endereço divergente',
+    'Laudo apenas com fotos, sem descrição',
+  ]},
+  { id: 6,  ico: '🧾', nome: 'Boleto de Aluguel / Rescisão', itens: [
+    'Boleto não descritivo (sem discriminação dos valores)',
+    'Data de vencimento divergente do contrato',
+    'Responsável pelo pagamento sem vínculo com o contrato',
+    'Valor do aluguel divergente (sem reajuste em < 12 meses)',
+    'Declaração imobiliária não assinada',
+    'Endereço do imóvel no boleto sem vínculo com a locação',
+  ]},
+  { id: 7,  ico: '🏠', nome: 'Boleto de Condomínio', itens: [
+    'Boleto sem código de barras para validação',
+    'Demonstrativo não enviado ou incompleto',
+    'Declaração imobiliária não assinada',
+    'Boleto sem vínculo com o imóvel',
+    'Rateio sem declaração correspondente',
+  ]},
+  { id: 8,  ico: '💡', nome: 'Contas de Consumo / IPTU / Seguros', itens: [
+    'Demonstrativo ausente: água, luz ou gás',
+    'Demonstrativo com bloqueio de LGPD',
+    'Boleto sem vínculo com o imóvel',
+    'Declaração imobiliária incompleta ou não assinada',
+    'IPTU: boleto original não enviado',
+  ]},
+  { id: 9,  ico: '⚠️', nome: 'Multa Contratual', itens: [
+    'Multa com divergência de cálculo',
+    'Multa em contrato por prazo indeterminado',
+    'Cláusula de multa ausente no contrato',
+  ]},
+  { id: 10, ico: '📅', nome: 'Aviso Prévio', itens: [
+    'Aviso prévio com divergência de cálculo',
+    'Aviso prévio parcial (< 30 dias)',
+    'Cobrança superior ao aluguel sem detalhamento',
+  ]},
+  { id: 11, ico: '🔧', nome: 'Orçamentos e Reparos', itens: [
+    'Orçamentos não enviados',
+    'Orçamento incompleto ou não desmembrado',
+    'Itens dos orçamentos divergem entre si',
+    'Documento sem vínculo com o imóvel (sem endereço)',
+    'Soma dos itens diverge do total',
+    'Orçamento não emitido pela plataforma Refera',
+  ]},
+  { id: 12, ico: '📷', nome: 'Fotos (Entrada e Saída)', itens: [
+    'Fotos com baixa resolução ou em preto e branco',
+    'Fotos de entrada e saída enviadas misturadas (separar)',
+    'Link de acesso bloqueado na plataforma',
+    'Fotos insuficientes para análise dos reparos',
+  ]},
+  { id: 13, ico: '👤', nome: 'Dados do Inquilino', itens: [
+    'CPF/Nome incorreto na plataforma',
+    'CPF/Nome incorreto no contrato de locação',
+    'Inquilino da plataforma não consta no contrato como locatário',
+  ]},
+  { id: 14, ico: '📍', nome: 'Endereço do Imóvel', itens: [
+    'Endereço divergente: contrato × plataforma',
+    'Endereço divergente internamente no contrato',
+  ]},
+];
+
+// ── State ────────────────────────────────────────────────────────
+const STATE_KEY = 'lcb_state';
+let S = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { contractId: '', items: {}, notes: {} };
+}
+
+function saveState() {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(S)); } catch(e) {}
+}
+
+function clearAll() {
+  if (!confirm('Limpar todo o checklist?')) return;
+  S = { contractId: '', items: {}, notes: {} };
+  saveState();
+  $('#contract-id').val('');
+  render();
+  $('#ia-panel').hide();
+  toast('Checklist limpo.');
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function itemKey(catId, idx) { return `${catId}_${idx}`; }
+
+function render() {
+  const root = $('#checklist-root').empty();
+  CATS.forEach(cat => {
+    const stats = getCatStats(cat);
+    root.append(buildSection(cat, stats));
+  });
+  updateSummary();
+}
+
+function getCatStats(cat) {
+  let ok = 0, pend = 0, na = 0;
+  cat.itens.forEach((_, i) => {
+    const v = S.items[itemKey(cat.id, i)];
+    if (v === 'ok')   ok++;
+    else if (v === 'pend') pend++;
+    else if (v === 'na')   na++;
+  });
+  return { ok, pend, na, total: cat.itens.length };
+}
+
+function pillClass(stats) {
+  if (stats.ok + stats.na === stats.total) return 'done';
+  if (stats.ok + stats.pend + stats.na > 0)  return 'partial';
+  return '';
+}
+
+function pillLabel(stats) {
+  if (stats.ok + stats.na === stats.total) return `<i class="bi bi-check-circle-fill text-success me-1"></i>${stats.total}/${stats.total}`;
+  return `${stats.ok + stats.na}/${stats.total}`;
+}
+
+function buildSection(cat, stats) {
+  const cls = pillClass(stats);
+  const open = S[`open_${cat.id}`] ? 'open' : '';
+  const bodyDisplay = open ? '' : 'display:none';
+
+  const $card = $(`
+    <div class="section-card" data-cat="${cat.id}">
+      <div class="section-head ${open}" data-toggle="${cat.id}">
+        <div class="section-title">
+          <span class="ico">${cat.ico}</span>
+          <span>${cat.nome}</span>
+        </div>
+        <div class="section-badges">
+          <span class="prog-pill ${cls}">${pillLabel(stats)}</span>
+          <i class="bi bi-chevron-${open ? 'up' : 'down'} text-muted" style="font-size:12px"></i>
+        </div>
+      </div>
+      <div class="section-body" style="${bodyDisplay}"></div>
+    </div>
+  `);
+
+  const $body = $card.find('.section-body');
+
+  // Item rows
+  cat.itens.forEach((txt, i) => {
+    const k   = itemKey(cat.id, i);
+    const val = S.items[k] || '';
+    $body.append(`
+      <div class="item-row">
+        <div class="item-label">${escHtml(txt)}</div>
+        <div class="item-actions">
+          <button class="btn-status ok   ${val==='ok'  ?'ok':''}  " data-k="${k}" data-v="ok"  >OK</button>
+          <button class="btn-status pend ${val==='pend'?'pend':''}" data-k="${k}" data-v="pend">Pend.</button>
+          <button class="btn-status na   ${val==='na'  ?'na':''}  " data-k="${k}" data-v="na"  >N/A</button>
+        </div>
+      </div>
+    `);
+  });
+
+  // Notes
+  const noteVal = S.notes[cat.id] || '';
+  $body.append(`
+    <div class="notes-wrap">
+      <label>Observações para esta categoria</label>
+      <textarea data-note="${cat.id}" placeholder="Ex: Documento enviado em 03/04 via e-mail...">${escHtml(noteVal)}</textarea>
+    </div>
+  `);
+
+  return $card;
+}
+
+// ── Event delegation ─────────────────────────────────────────────
+$(document).on('click', '[data-toggle]', function() {
+  const id = +$(this).data('toggle');
+  S[`open_${id}`] = !S[`open_${id}`];
+  saveState();
+  // toggle UI
+  const $head = $(this);
+  const $body = $head.next('.section-body');
+  const isOpen = S[`open_${id}`];
+  $head.toggleClass('open', isOpen);
+  $head.find('.bi-chevron-up, .bi-chevron-down')
+    .removeClass('bi-chevron-up bi-chevron-down')
+    .addClass(isOpen ? 'bi-chevron-up' : 'bi-chevron-down');
+  $body.toggle(isOpen);
+});
+
+$(document).on('click', '.btn-status', function() {
+  const $btn = $(this);
+  const k = $btn.data('k');
+  const v = $btn.data('v');
+  // toggle off if already selected
+  S.items[k] = (S.items[k] === v) ? '' : v;
+  saveState();
+  // re-render just this row's buttons
+  const $row = $btn.closest('.item-row');
+  $row.find('.btn-status').each(function() {
+    const bv = $(this).data('v');
+    $(this).removeClass('ok pend na').addClass(S.items[k] === bv ? bv : '');
+  });
+  // update section pill
+  const catId = +$btn.closest('[data-cat]').data('cat');
+  const cat   = CATS.find(c => c.id === catId);
+  const stats = getCatStats(cat);
+  const $card = $btn.closest('.section-card');
+  $card.find('.prog-pill')
+    .attr('class', 'prog-pill ' + pillClass(stats))
+    .html(pillLabel(stats));
+  updateSummary();
+});
+
+$(document).on('input', '[data-note]', function() {
+  const id = +$(this).data('note');
+  S.notes[id] = $(this).val();
+  saveState();
+});
+
+$('#contract-id').on('input', function() {
+  S.contractId = $(this).val().trim();
+  saveState();
+});
+
+// ── Summary counter ──────────────────────────────────────────────
+function updateSummary() {
+  let ok = 0, pend = 0, na = 0, blank = 0, total = 0;
+  CATS.forEach(cat => {
+    cat.itens.forEach((_, i) => {
+      total++;
+      const v = S.items[itemKey(cat.id, i)];
+      if (v === 'ok')   ok++;
+      else if (v === 'pend') pend++;
+      else if (v === 'na')   na++;
+      else blank++;
+    });
+  });
+  $('#count-ok').text(ok);
+  $('#count-pend').text(pend);
+  $('#count-na').text(na);
+  $('#count-blank').text(`${blank} sem resposta`).css('color', blank > 0 ? '#92400e' : '#6c757d');
+}
+
+// ── Report ───────────────────────────────────────────────────────
+function buildReport() {
+  const id = S.contractId || '(sem ID)';
+  let lines = [`CHECKLIST DE ANÁLISE DE SAÍDA — ${id}`, `Data: ${new Date().toLocaleDateString('pt-BR')}`, ''];
+  CATS.forEach(cat => {
+    const pendItems = cat.itens.filter((_, i) => S.items[itemKey(cat.id, i)] === 'pend');
+    if (!pendItems.length) return;
+    lines.push(`[${cat.ico} ${cat.nome.toUpperCase()}]`);
+    pendItems.forEach(txt => lines.push(`  • ${txt}`));
+    const note = S.notes[cat.id];
+    if (note) lines.push(`  Obs: ${note}`);
+    lines.push('');
+  });
+  if (lines.length === 3) lines.push('Nenhuma pendência identificada.');
+  return lines.join('\n');
+}
+
+function copyReport() {
+  const txt = buildReport();
+  navigator.clipboard.writeText(txt)
+    .then(() => toast('Relatório copiado!'))
+    .catch(() => {
+      // fallback for HTTP contexts
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('Relatório copiado!');
+    });
+}
+
+// ── IA analysis — calls Flask backend ───────────────────────────
+// Backend stub (Flask):
+//   @app.route("/api/checklist/ia", methods=["POST"])
+//   def checklist_ia():
+//       data = request.json
+//       # data: { contract_id, items (list of pending items), notes }
+//       # call Gemini/OpenAI, return { resultado: "..." }
+//       return jsonify({"resultado": "..."})
+function runIA() {
+  const id = S.contractId;
+  if (!id) { toast('Informe o ID do contrato antes de analisar.'); return; }
+
+  const pending = [];
+  CATS.forEach(cat => {
+    cat.itens.forEach((txt, i) => {
+      if (S.items[itemKey(cat.id, i)] === 'pend') {
+        pending.push({ categoria: cat.nome, item: txt, obs: S.notes[cat.id] || '' });
+      }
+    });
+  });
+
+  if (!pending.length) { toast('Nenhuma pendência para analisar.'); return; }
+
+  // Show panel with spinner
+  $('#ia-result').html('<div class="d-flex align-items-center gap-2"><div class="spinner-border spinner-sm text-success"></div><span class="text-muted">Analisando…</span></div>');
+  $('#ia-panel').show();
+  $('#btn-ia').prop('disabled', true);
+
+  $.ajax({
+    url: '/api/checklist/ia',
+    method: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      contract_id: id,
+      items: pending,
+      notes: S.notes,
+    }),
+    success(resp) {
+      $('#ia-result').text(resp.resultado || 'Análise concluída.');
+    },
+    error(xhr) {
+      const msg = xhr.responseJSON?.erro || `Erro ${xhr.status} — verifique o servidor.`;
+      $('#ia-result').html(`<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>${escHtml(msg)}</span>`);
+    },
+    complete() {
+      $('#btn-ia').prop('disabled', false);
+    }
+  });
+}
+
+// ── Utilities ────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, dur = 2800) {
+  const $t = $('#toast').text(msg).addClass('show');
+  setTimeout(() => $t.removeClass('show'), dur);
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+$(function() {
+  if (S.contractId) $('#contract-id').val(S.contractId);
+  render();
+});
+</script>
+</body>
+</html>
